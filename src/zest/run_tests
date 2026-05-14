@@ -1,0 +1,72 @@
+#autoload
+
+print
+zest_pass=0; zest_fail=0; zest_skip=0
+zest_failures=()
+
+local -A opts
+zparseopts -D -E -K -A opts -- n:
+(( ? != 0 )) && return 1
+
+local -a test_funcs=($@)
+local filter=${opts[-n]:-}
+
+if (( $#test_funcs == 0 )); then
+  test_funcs=(${(ok)functions[(I)test_*]})
+fi
+
+if [[ -n $filter ]]; then
+  test_funcs=(${(M)test_funcs:#*${filter}*})
+fi
+
+if (( $#test_funcs == 0 )); then
+  __zest_printerr "zest: no test_* functions found${filter:+ matching '$filter'}"
+  return 1
+fi
+
+local func
+local funcbody
+__zest_func_index=0
+__zest_func_count=$#test_funcs
+for func in $test_funcs; do
+  (( __zest_func_index = __zest_func_index + 1 ))
+  zest_current_test=${func#test_}
+  zest_current_failed=false
+  zest_current_skipped=false
+  zest_current_skip_msg=""
+  rc=0; out=""; err=""
+
+  __zest_run_setup_hooks
+  funcbody="emulate -L zsh; setopt pipefail errreturn;"
+  funcbody+=$'\x0a'
+  funcbody=${funcbody}${functions[$func]}
+  functions[$func]=$funcbody
+
+  $func; local func_rc=$?
+
+  if (( func_rc != 0 )) && ! $zest_current_failed; then
+    zest_current_failed=true
+    local location=${functions_source[$func]:-unknown}
+    (( failure_index = ${#zest_failures} + 1 ))
+    zest_failures+=("  ${failure_index}) ${zest_current_test//_/ } ($location)")
+    zest_failures+=("    test returned non-zero: $func_rc")
+  fi
+
+  __zest_run_teardown_hooks
+
+  local label=${zest_current_test//_/ }
+
+  if $zest_current_skipped; then
+    print -P "%F{yellow}SKIP%f: %B$label${zest_current_skip_msg:+ ($zest_current_skip_msg)}%b"
+    (( zest_skip++ ))
+  elif $zest_current_failed; then
+    print -P "%F{red}FAIL%f: %B$label%b"
+    (( zest_fail++ ))
+  else
+    print -P "%F{green}PASS%f: %B$label%b"
+    (( zest_pass++ ))
+  fi
+done
+
+print
+__zest_print_results_summary

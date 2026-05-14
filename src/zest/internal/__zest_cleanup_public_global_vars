@@ -1,0 +1,28 @@
+#autoload
+
+emulate -L zsh
+setopt errreturn
+
+local var
+local filename
+local -a vars=(${(k)__zest_public_global_vars})
+
+for var in $vars; do
+  unset $var
+done
+
+if ! __zest_param_defined __zest_initialize_public_global_vars_tempfile; then
+  return
+fi
+
+filename=$__zest_initialize_public_global_vars_tempfile
+
+unset __zest_initialize_public_global_vars_tempfile
+
+if [[ -f $filename ]]; then
+  {
+    source $filename
+    } always {
+    zf_rm -f $filename
+  }
+fi

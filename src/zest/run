@@ -1,0 +1,8 @@
+#autoload
+
+emulate -L zsh
+local errfile=$(mktemp)
+out="$($@ 2>$errfile)"
+rc=$?
+err=${mapfile[$errfile]}
+zf_rm -f $errfile

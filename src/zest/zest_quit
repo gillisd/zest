@@ -1,0 +1,5 @@
+#autoload
+emulate -L zsh
+
+__zest_cleanup_public_global_vars
+__zest_cleanup_zest_vars

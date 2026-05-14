@@ -1,0 +1,21 @@
+#autoload
+
+emulate -L zsh
+
+local msg=$1
+local location=${funcfiletrace[2]:-unknown}
+local heading_indent="  "
+local failures_indent="     "
+local NL=$'\x0a'
+local base_message
+
+(( __zest_failure_index = __zest_failure_index + 1 ))
+
+zest_current_failed=true
+
+zest_failures+=("${heading_indent}${__zest_failure_index}) ${zest_current_test//_/ } %F{cyan}($location)%f")
+base_message="Failure/Error: $msg"
+base_message=${base_message//#/$failures_indent}
+base_message=${base_message//$NL/$NL$failures_indent}
+base_message="%F{red}${base_message}%f"
+zest_failures+=($base_message)

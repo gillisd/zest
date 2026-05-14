@@ -1,0 +1,13 @@
+#autoload
+
+local needle=${1:-0}
+local message="${@[2,-1]}"
+if assert $needle; then
+  if [[ -n $message ]]; then
+    __zest_record_failure $message
+  fi
+
+  return 1
+else
+  return 0
+fi

@@ -1,0 +1,40 @@
+#autoload
+
+emulate -L zsh
+local fn
+local var
+local assertion_type
+local new_fn
+
+__zest_open_builder_dsl
+{
+
+  if __zest_is_function_defined check; then
+    __zest_printerr "INTERNAL ZEST ERROR: Expected function \"check\" to not be defined but was. Cannot continue"
+    return 1
+  fi
+
+  for fn in ${functions[(I)define_assertion__*]}; do
+    for var in $parameters[(I)__zest_builder_dsl_var_*]; do
+      unset $var
+    done
+
+    $fn
+
+    local new_fn=${fn##define_assertion__}
+
+    for var in $parameters[(I)__zest_builder_dsl_var_*_message]; do
+      assertion_type=${${var##__zest_builder_dsl_var_}%%ion_message}
+      __zest_define_eval_assertion_fn ${assertion_type} ${new_fn} ${(P)var} ${(F)__zest_builder_dsl_var_arg_defs}
+    done
+
+    if ! __zest_is_function_defined check; then
+      __zest_printerr "ERROR: Assertion definition %B${(qqq)fn}%b must define function %B\"check\"%b"
+      return 1
+    fi
+
+    unfunction check
+  done
+  } always {
+  __zest_close_builder_dsl
+}

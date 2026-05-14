@@ -1,0 +1,14 @@
+#autoload
+
+emulate -L zsh
+setopt errreturn
+
+local var value
+local -a opts
+local -A vars=([reply]=a [areply]=A [FREPLY]=F [REPLY]=none)
+for var value in ${(kv)vars}; do
+  opts=(-g)
+  [[ $value = none ]] || opts+=(-$value)
+  __zest_param_defined $var && unset $var
+  typeset $opts $var
+done

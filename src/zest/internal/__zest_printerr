@@ -1,0 +1,3 @@
+#autoload
+
+__zest_print -u2 --color=red $@

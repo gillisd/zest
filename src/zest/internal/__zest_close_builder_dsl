@@ -1,0 +1,35 @@
+#autoload
+
+emulate -L zsh
+
+if ! $__zest_builder_dsl_open; then
+  return 0
+fi
+
+local fn
+local var
+local original_fn
+local -a dsl_vars=(${parameters[(I)__zest_builder_dsl_var_*]})
+local -a user_defined_fns=(${functions[(I)define_assertion__*]})
+
+for fn in $__zest_builder_dsl_functions; do
+  original_fn=__zest_original_$fn
+  if __zest_is_function_defined $fn; then
+    unfunction $fn
+  fi
+
+  if __zest_is_function_defined $original_fn; then
+    functions -c $original_fn $fn
+    unfunction $original_fn
+  fi
+done
+
+for fn in $user_defined_fns; do
+  unfunction $fn
+done
+
+for var in $dsl_vars; do
+  unset $var
+done
+
+__zest_builder_dsl_open=false

@@ -1,0 +1,36 @@
+#autoload
+
+local -A opt_args
+local -a print_opts
+local string
+
+zparseopts \
+  -D \
+  -E \
+  -K \
+  -A \
+  opt_args \
+  - \
+  -color:
+(( ? != 0 )) && return 1
+
+local color
+if (( $+opt_args[--color] )); then
+  color=${opt_args[--color]##=}
+fi
+
+integer string_start_index=${@[(i)[^-]*]}
+integer string_end_index=${#@}
+print_opts=(${@[1,$((string_start_index - 1))]})
+string="${@[$string_start_index, $string_end_index]}"
+
+if [[ -n $color ]]; then
+  string="%F{$color}${string}%f"
+  if ! (( $print_opts[(I)-P] )); then
+    print_opts+=(-P)
+  fi
+else
+  print_opts+=(--)
+fi
+
+print $print_opts $string

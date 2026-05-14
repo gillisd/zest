@@ -1,0 +1,18 @@
+#autoload
+local needle=${1:-0}
+local message="${@[2,-1]}"
+local rc
+
+case $needle in
+    (0) rc=1 ;;
+    (1) rc=0 ;;
+    (true) rc=0 ;;
+    (false) rc=1 ;;
+    (*) rc=0 ;;
+esac
+
+if [[ -n $message ]]; then
+  __zest_record_failure $message
+fi
+
+return $rc

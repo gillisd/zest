@@ -1,0 +1,70 @@
+#autoload
+
+emulate -L zsh
+
+if $__zest_builder_dsl_open; then
+  return 0
+fi
+
+local fn
+
+for fn in $__zest_builder_dsl_functions; do
+  if __zest_is_function_defined $fn; then
+    functions -c $fn __zest_original_$fn
+  fi
+
+  if [[ $fn =~ '^.*_message$' ]]; then
+    ${fn}() {
+      emulate -L zsh
+      local message="${@}"
+
+      if [[ -z $message ]]; then
+        __zest_printerr "ZEST ERROR: $0 must be called with a non-empty message"
+        return 1
+      fi
+
+      eval "typeset -g __zest_builder_dsl_var_${0}=${(q)message}"
+    }
+  fi
+done
+
+arg() {
+  local name=${1}
+  local type=${2:-string}
+  local buf
+  integer index
+
+  if [[ -z $name ]]; then
+    __zest_printerr "Usage: %B$0%b <name> <type (optional)>"
+    return 1
+  fi
+
+  if (( $parameters[__zest_builder_dsl_var_arg_defs] )); then
+    typeset -g __zest_builder_dsl_var_arg_defs
+  fi
+
+  case $type in
+    integer)
+      buf+=integer
+      ;;
+    string)
+      buf+=local
+      ;;
+    float)
+      buf+=float
+      ;;
+    array)
+      buf+="local -a"
+      ;;
+    *)
+      __zest_printerr "ERROR: Type %B$type%b is not acceptable"
+      return 1
+      ;;
+  esac
+  (( index = $#__zest_builder_dsl_var_arg_defs + 1 ))
+  buf+=" ${name}=\${${index}}"
+
+  __zest_builder_dsl_var_arg_defs+=($buf)
+}
+
+__zest_builder_dsl_open=true

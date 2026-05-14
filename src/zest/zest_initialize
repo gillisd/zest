@@ -1,0 +1,5 @@
+#autoload
+emulate -L zsh
+
+__zest_initialize_public_global_vars
+__zest_build_assertions

@@ -1,0 +1,16 @@
+#autoload
+
+emulate -L zsh
+
+if __zest_on_initial_test
+then
+  __zest_internal_setup_initial
+fi
+
+__zest_internal_setup
+if (( $+functions[setup] )); then
+  setup; local setup_rc=$?
+  if (( setup_rc != 0 )); then
+    __zest_record_failure "setup returned non-zero: $setup_rc"
+  fi
+fi

@@ -1,0 +1,27 @@
+#autoload
+
+emulate -L zsh
+setopt errreturn
+
+# Populated by `run`
+if __zest_param_defined __zest_initialize_public_global_vars_tempfile; then
+  # user has already initialized zest and this should be idempotent
+  return 0
+fi
+
+local var value
+typeset -g __zest_initialize_public_global_vars_tempfile
+
+for var value in ${(kv)__zest_public_global_vars}; do
+  if __zest_param_defined $var; then
+    if ! [[ -f $__zest_initialize_public_global_vars_tempfile ]]; then
+      __zest_initialize_public_global_vars_tempfile=$(mktemp)
+    fi
+    typeset -p $var >> $__zest_initialize_public_global_vars_tempfile
+  fi
+
+  if [[ $value = none ]]; then
+    value=""
+  fi
+  typeset -g $var=$value
+done

@@ -1,0 +1,6 @@
+#autoload
+
+emulate -L zsh
+
+zest_current_skipped=true
+zest_current_skip_msg=${1:-}

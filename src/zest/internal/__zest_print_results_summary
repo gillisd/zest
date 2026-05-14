@@ -1,0 +1,14 @@
+#autoload
+
+local results_string="$zest_pass passed, $zest_fail failed${zest_skip:+, $zest_skip skipped}"
+if (( zest_fail > 0 )); then
+  print "Failures: "
+  print
+  print -l -P $zest_failures
+  print
+  print -P "%F{red}$results_string%f"
+  return 1
+else
+  print -P "%F{green}$results_string%f"
+  return 0
+fi

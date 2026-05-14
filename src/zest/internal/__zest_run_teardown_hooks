@@ -1,0 +1,16 @@
+#autoload
+
+emulate -L zsh
+
+__zest_internal_teardown
+if (( $+functions[teardown] )); then
+  teardown; local teardown_rc=$?
+  if (( teardown_rc != 0 )); then
+    __zest_record_failure "teardown returned non-zero: $teardown_rc"
+  fi
+fi
+
+if __zest_on_final_test
+then
+  __zest_internal_teardown_final
+fi
