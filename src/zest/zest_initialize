@@ -1,5 +1,41 @@
 #autoload
+
 emulate -L zsh
+
+setopt extendedglob
+
+zmodload -F zsh/files b:zf_rm
+zmodload zsh/mapfile
+
+autoload -Uz __zest_initialize_public_global_vars
+autoload -Uz __zest_build_assertions
+
+# ── state ────────────────────────────────────────────────────────────────
+typeset -gi zest_pass=0 zest_fail=0 zest_skip=0
+typeset -ga zest_failures
+typeset -g zest_current_test
+typeset -g zest_current_failed
+
+typeset -gi __zest_failure_index=0
+typeset -gi __zest_func_index
+typeset -gi __zest_func_count
+
+# these are handled in a separate init path to prevent contamination with existing state. While it may look over-engineered for these 3,
+# it can easily be extended to support any potentially shadowed variables
+typeset -gA __zest_public_global_vars=(
+  [rc]=0
+  [out]="none"
+  [err]="none"
+)
+
+typeset -ga __zest_builder_dsl_functions=(
+  check
+  arg
+  assertion_message
+  refution_message
+)
+
+typeset -g __zest_builder_dsl_open=false
 
 __zest_initialize_public_global_vars
 __zest_build_assertions
