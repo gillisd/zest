@@ -1,0 +1,24 @@
+zest() {
+  emulate -L zsh
+  setopt extendedglob
+  setopt errreturn
+
+  typeset -g __ZEST_MAIN_FILE
+  typeset -g __ZEST_ROOT_DIR
+  typeset -ga __ZEST_FUNCTION_DIRS
+  typeset -ga __ZEST_FUNCTIONS
+
+  print -v __ZEST_MAIN_FILE -P %x
+
+  __ZEST_MAIN_FILE=${__ZEST_MAIN_FILE:A}
+  __ZEST_ROOT_DIR=${__ZEST_MAIN_FILE:h}
+  __ZEST_FUNCTION_DIRS=($__ZEST_ROOT_DIR/src/**/*(/N))
+
+  fpath+=($__ZEST_FUNCTION_DIRS)
+  __ZEST_FUNCTIONS=(${~__ZEST_FUNCTION_DIRS/%/***/[^.](#c1,)(#qN.:t)})
+  autoload -Uz $__ZEST_FUNCTIONS
+
+  zest_initialize
+}
+
+zest

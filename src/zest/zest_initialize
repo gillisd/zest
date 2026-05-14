@@ -7,9 +7,6 @@ setopt extendedglob
 zmodload -F zsh/files b:zf_rm
 zmodload zsh/mapfile
 
-autoload -Uz __zest_initialize_public_global_vars
-autoload -Uz __zest_build_assertions
-
 # ── state ────────────────────────────────────────────────────────────────
 typeset -gi zest_pass=0 zest_fail=0 zest_skip=0
 typeset -ga zest_failures
@@ -36,6 +33,8 @@ typeset -ga __zest_builder_dsl_functions=(
 )
 
 typeset -g __zest_builder_dsl_open=false
+
+source $__ZEST_ROOT_DIR/src/zest/assertions/*.zsh
 
 __zest_initialize_public_global_vars
 __zest_build_assertions
