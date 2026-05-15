@@ -10,7 +10,7 @@ __zest_open_builder_dsl
 {
 
   if __zest_is_function_defined check; then
-    __zest_printerr "INTERNAL ZEST ERROR: Expected function \"check\" to not be defined but was. Cannot continue"
+    zest_printerr "INTERNAL ZEST ERROR: Expected function \"check\" to not be defined but was. Cannot continue"
     return 1
   fi
 
@@ -29,7 +29,7 @@ __zest_open_builder_dsl
     done
 
     if ! __zest_is_function_defined check; then
-      __zest_printerr "ERROR: Assertion definition %B${(qqq)fn}%b must define function %B\"check\"%b"
+      zest_printerr "ERROR: Assertion definition %B${(qqq)fn}%b must define function %B\"check\"%b"
       return 1
     fi
 

@@ -40,6 +40,6 @@ case $assertion_type in
     "
     ;;
   *)
-    __zest_printerr "ZEST INTERNAL ERROR: assertion type ${(qqq)assertion_type} not supported"
+    zest_printerr "ZEST INTERNAL ERROR: assertion type ${(qqq)assertion_type} not supported"
     return 1
 esac

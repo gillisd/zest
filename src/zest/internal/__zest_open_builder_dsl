@@ -19,7 +19,7 @@ for fn in $__zest_builder_dsl_functions; do
       local message="${@}"
 
       if [[ -z $message ]]; then
-        __zest_printerr "ZEST ERROR: $0 must be called with a non-empty message"
+        zest_printerr "ZEST ERROR: $0 must be called with a non-empty message"
         return 1
       fi
 
@@ -35,7 +35,7 @@ arg() {
   integer index
 
   if [[ -z $name ]]; then
-    __zest_printerr "Usage: %B$0%b <name> <type (optional)>"
+    zest_printerr "Usage: %B$0%b <name> <type (optional)>"
     return 1
   fi
 
@@ -57,7 +57,7 @@ arg() {
       buf+="local -a"
       ;;
     *)
-      __zest_printerr "ERROR: Type %B$type%b is not acceptable"
+      zest_printerr "ERROR: Type %B$type%b is not acceptable"
       return 1
       ;;
   esac

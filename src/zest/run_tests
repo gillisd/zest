@@ -20,7 +20,7 @@ if [[ -n $filter ]]; then
 fi
 
 if (( $#test_funcs == 0 )); then
-  __zest_printerr "zest: no test_* functions found${filter:+ matching '$filter'}"
+  zest_printerr "zest: no test_* functions found${filter:+ matching '$filter'}"
   return 1
 fi
 
