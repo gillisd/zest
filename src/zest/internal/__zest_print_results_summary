@@ -6,9 +6,9 @@ if (( zest_fail > 0 )); then
   print
   print -l -P $zest_failures
   print
-  print -P "%F{red}$results_string%f"
+  zest_printerr $results_string
   return 1
 else
-  print -P "%F{green}$results_string%f"
+  zest_print --color=green $results_string
   return 0
 fi

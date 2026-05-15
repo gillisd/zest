@@ -57,13 +57,16 @@ for func in $test_funcs; do
   local label=${zest_current_test//_/ }
 
   if $zest_current_skipped; then
-    print -P "%F{yellow}SKIP%f: %B$label${zest_current_skip_msg:+ ($zest_current_skip_msg)}%b"
+    zest_print -n --color=yellow "SKIP"
+    zest_print --color=white ": %B$label${zest_current_skip_msg:+ ($zest_current_skip_msg)}%b"
     (( zest_skip++ ))
   elif $zest_current_failed; then
-    print -P "%F{red}FAIL%f: %B$label%b"
+    zest_print -n --color=red "FAIL"
+    zest_print --color=white ": %B$label%b"
     (( zest_fail++ ))
   else
-    print -P "%F{green}PASS%f: %B$label%b"
+    zest_print -n --color=green "PASS"
+    zest_print --color=white ": %B$label%b"
     (( zest_pass++ ))
   fi
 done
