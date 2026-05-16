@@ -4,7 +4,6 @@ emulate -L zsh
 
 setopt extendedglob
 
-zmodload -F zsh/files b:zf_rm
 zmodload zsh/mapfile
 
 # ── state ────────────────────────────────────────────────────────────────
