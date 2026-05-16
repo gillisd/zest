@@ -1,5 +1,8 @@
 #autoload
 emulate -L zsh
 
+unfunction assert
+unfunction run_tests
+unfunction run
 __zest_cleanup_public_global_vars
 __zest_cleanup_zest_vars

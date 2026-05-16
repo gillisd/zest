@@ -5,8 +5,10 @@ emulate -L zsh
 local var
 local vars_to_unset
 
-vars_to_unset+=(${parameters[(I)zest_*]})
 vars_to_unset+=(${parameters[(I)__zest_*]})
+vars_to_unset+=(${parameters[(I)zest_*]})
+vars_to_unset+=(${parameters[(I)__ZEST_*]})
+vars_to_unset+=(${parameters[(I)ZEST_*]})
 
 for var in $vars_to_unset; do
   unset $var
