@@ -1,0 +1,31 @@
+#!/usr/bin/env zsh
+
+setopt extendedglob
+#setopt pipefail
+#setopt errexit
+
+typeset thisfile builddir entrypoint file
+print -v thisfile -P %x
+
+thisfile=${thisfile:P}
+builddir=${thisfile:h}
+entrypoint=${builddir:h}/zest
+testdir=${builddir:h}/test
+
+if ! [[ -f $entrypoint ]]; then
+  print -u2 "Error: zest executable not found at $entrypoint"
+  exit 1
+fi
+
+if ! [[ -d $testdir ]]; then
+  print -u2 "Error: test directory not found at $testdir"
+  exit 1
+fi
+
+source $entrypoint
+
+for file in $testdir/**/*.zsh(.); do
+  zest_print --color=cyan "Loading %B$file%b"
+  source $file
+done
+run_tests
