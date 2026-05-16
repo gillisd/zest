@@ -23,9 +23,9 @@ case $assertion_type in
       }
     "
     ;;
-  refut)
+  refutat)
     eval "
-      ${combined_name//refut/refute}() {
+      ${combined_name//refutat/refute}() {
         emulate -L zsh
         $defs
         local message=$message

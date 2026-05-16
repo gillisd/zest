@@ -29,7 +29,7 @@ typeset -ga __zest_builder_dsl_functions=(
   check
   arg
   assertion_message
-  refution_message
+  refutation_message
 )
 
 typeset -g __zest_builder_dsl_open=false
