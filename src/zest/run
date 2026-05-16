@@ -2,6 +2,7 @@
 
 emulate -L zsh
 
+zmodload zsh/mapfile
 zmodload -F zsh/files b:zf_rm
 
 local errfile=$(mktemp)

@@ -4,8 +4,6 @@ emulate -L zsh
 
 setopt extendedglob
 
-zmodload zsh/mapfile
-
 # ── state ────────────────────────────────────────────────────────────────
 typeset -gi zest_pass=0 zest_fail=0 zest_skip=0
 typeset -ga zest_failures
