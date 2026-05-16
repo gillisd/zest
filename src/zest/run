@@ -7,5 +7,5 @@ zmodload -F zsh/files b:zf_rm
 local errfile=$(mktemp)
 out="$($@ 2>$errfile)"
 rc=$?
-err=${mapfile[$errfile]}
+err=${${mapfile[$errfile]}%$NL}
 zf_rm -f $errfile

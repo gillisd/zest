@@ -22,6 +22,7 @@ typeset -gA __zest_public_global_vars=(
   [rc]=0
   [out]="none"
   [err]="none"
+  [NL]=$'\x0a'
 )
 
 typeset -ga __zest_builder_dsl_functions=(
