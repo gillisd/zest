@@ -26,3 +26,8 @@ test_refute_file_exists_on_failure() {
   assert_equal 1 $rc
   rm -f $tmpfile
 }
+
+test_refute_file_exists_directory() {
+  run refute_file_exists /tmp
+  assert_equal 1 $rc
+}
