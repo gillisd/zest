@@ -33,3 +33,15 @@ test_refute_defined_on_failure() {
   run refute_defined myvar
   assert_equal 1 $rc
 }
+
+test_refute_defined_empty_string_is_still_defined() {
+  local myvar=""
+  run refute_defined myvar
+  assert_equal 1 $rc
+}
+
+test_refute_defined_array() {
+  local -a myarr=(one two)
+  run refute_defined myarr
+  assert_equal 1 $rc
+}
