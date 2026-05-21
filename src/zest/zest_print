@@ -11,8 +11,18 @@ zparseopts \
   -A \
   opt_args \
   - \
+  v: \
   -color:
 (( ? != 0 )) && return 1
+
+local var
+if (( $+opt_args[--var] )); then
+  print_opts+=(-v ${opt_args[--var]##=})
+fi
+
+if (( $+opt_args[-v] )); then
+  print_opts+=(-v ${opt_args[-v]})
+fi
 
 local color
 if (( $+opt_args[--color] )); then
@@ -33,4 +43,4 @@ else
   print_opts+=(--)
 fi
 
-print $print_opts $string
+builtin print $print_opts $string
