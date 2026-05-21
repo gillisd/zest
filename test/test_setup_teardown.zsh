@@ -1,7 +1,7 @@
 test_setup_hook_called() {
   integer count=0
   setup() { (( ++count )) }
-  test_check_ran() { assert_greater_than 0 $count }
+  test_check_ran() { assert_greater_than $count 0 }
 
   run run_tests test_check_ran
   unfunction setup test_check_ran

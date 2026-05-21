@@ -1,8 +1,8 @@
 #autoload
 
-local needle=${1:-0}
+local expected=${1:-0}
 local message="${@[2,-1]}"
-if assert $needle; then
+if assert $expected; then
   if [[ -n $message ]]; then
     __zest_record_failure $message
   fi

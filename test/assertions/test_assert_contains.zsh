@@ -13,7 +13,7 @@ test_assert_contains_string_exact_match() {
   assert_equal 0 $rc
 }
 
-test_assert_contains_string_empty_needle() {
+test_assert_contains_string_empty_expected() {
   run assert_contains "foo" ""
   assert_equal 0 $rc
 }
@@ -51,7 +51,7 @@ test_refute_contains_string_exact_match() {
   assert_equal 1 $rc
 }
 
-test_refute_contains_string_empty_needle() {
+test_refute_contains_string_empty_expected() {
   run refute_contains "foo" ""
   assert_equal 1 $rc
 }

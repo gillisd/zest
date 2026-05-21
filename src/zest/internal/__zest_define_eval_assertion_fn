@@ -5,7 +5,7 @@ local fn_name=${2:?}
 local message=${3:?}
 local defs=${4:?}
 local combined_name=${assertion_type}_${fn_name}
-message=${${${(qqq)message}//'{needle}'/'%B${needle}%b'}//'{actual}'/'%B${actual}%b'}
+message=${${${(qqq)message}//'{expected}'/'%B${needle}%b'}//'{actual}'/'%B${actual}%b'}
 case $assertion_type in
   assert)
     eval "

@@ -1,66 +1,69 @@
 define_assertion__defined() {
-  arg actual
+  arg parameter
 
-  assertion_message "expected {actual} to be defined but was not"
-  refutation_message "expected {actual} to be undefined but was not"
+  assertion_message "expected {parameter} to be defined but was not"
+  refutation_message "expected {parameter} to be undefined but was not"
 
   check() {
-    assert $+parameters[$actual]
+    assert $+parameters[$parameter]
   }
 }
 
 define_assertion__greater_than() {
-  arg needle integer
-  arg actual integer
+  arg lhs integer
+  arg rhs integer
 
-  assertion_message "expected {actual} to be greater than {needle} but was not"
-  refutation_message "expected {actual} to not be greater than {needle} but was"
+  assertion_message "expected {lhs} to be greater than {rhs} but was not"
+  refutation_message "expected {lhs} to not be greater than {rhs} but was"
 
   check() {
-    assert $(( actual > needle ))
+    assert $(( lhs > rhs ))
   }
 }
 
 define_assertion__less_than() {
-  arg needle integer
-  arg actual integer
+  arg lhs integer
+  arg rhs integer
 
-  assertion_message "expected {actual} to be less than {needle} but was not"
-  refutation_message "expected {actual} to not be less than {needle} but was"
+  assertion_message "expected {lhs} to be less than {rhs} but was not"
+  refutation_message "expected {lhs} to not be less than {rhs} but was"
 
   check() {
-    assert $(( actual < needle ))
+    assert $(( lhs < rhs ))
   }
 }
 
 define_assertion__true() {
-  arg actual
-  assertion_message "expected {actual} to be %Btruthy%b but was not"
-  refutation_message "expected {actual} to not be %Btruthy%b but was"
+  arg subject
+
+  assertion_message "expected {subject} to be %Btruthy%b but was not"
+  refutation_message "expected {subject} to not be %Btruthy%b but was"
 
   check() {
-    assert $actual
+    assert $subject
   }
 }
 
 define_assertion__false() {
-  arg actual
-  assertion_message "expected {actual} to be %Bfalsey%b but was not"
-  refutation_message "expected {actual} to not be %Bfalsey%b but was"
+  arg subject
+
+  assertion_message "expected {subject} to be %Bfalsey%b but was not"
+  refutation_message "expected {subject} to not be %Bfalsey%b but was"
 
   check() {
-    refute $actual
+    refute $subject
   }
 }
 
 define_assertion__equal() {
+  arg expected
   arg actual
-  arg needle
-  assertion_message "{needle} != {actual}"
-  refutation_message "{needle} == {actual}"
+
+  assertion_message "{expected} != {actual}"
+  refutation_message "{expected} == {actual}"
 
   check() {
-    if [[ $actual = $needle ]]; then
+    if [[ $actual = $expected ]]; then
       return 0
     else
       return 1
@@ -69,57 +72,57 @@ define_assertion__equal() {
 }
 
 define_assertion__match() {
-  arg actual
-  arg needle
+  arg expected
+  arg pattern
 
-  assertion_message "expected {actual} to match {needle} but did not"
-  refutation_message "expected {actual} to not match {needle} but did"
+  assertion_message "expected {expected} to match {pattern} but did not"
+  refutation_message "expected {expected} to not match {pattern} but did"
 
   check() {
-    [[ $actual =~ $needle ]]
+    [[ $expected =~ $pattern ]]
   }
 }
 
 define_assertion__contains() {
-  arg actual
-  arg needle
+  arg container
+  arg item
 
-  assertion_message "expected {actual} to contain {needle} but did not"
-  refutation_message "expected {actual} to not contain {needle} but did"
+  assertion_message "expected {container} to contain {item} but did not"
+  refutation_message "expected {container} to not contain {item} but did"
 
   check() {
-    if __zest_is_array $actual; then
-      integer filtered_length=${#${${(P)actual}:#$needle}}
-      integer actual_length=${#${(P)actual}}
-      (( filtered_length < actual_length ))
+    if __zest_is_array $container; then
+      integer filtered_length=${#${${(P)container}:#$item}}
+      integer container_length=${#${(P)container}}
+      (( filtered_length < container_length ))
     else
-      [[ $actual = *${needle}* ]]
+      [[ $container = *${item}* ]]
     fi
   }
 }
 
 define_assertion__file_exists() {
-  arg actual
+  arg file
 
-  assertion_message "expected file {actual} to exist but did not"
-  refutation_message "expected file {actual} to not exist but did"
+  assertion_message "expected file {file} to exist but did not"
+  refutation_message "expected file {file} to not exist but did"
 
   check() {
-    [[ -e $actual ]]
+    [[ -e $file ]]
   }
 }
 
 define_assertion__empty() {
-  arg actual
+  arg container
 
-  assertion_message "expected {actual} to be empty but was not"
-  refutation_message "expected {actual} to not be empty but was"
+  assertion_message "expected {container} to be empty but was not"
+  refutation_message "expected {container} to not be empty but was"
 
   check() {
-    if [[ -n $actual ]] && __zest_is_array $actual; then
-      (( ${#${(P)${actual}}} == 0 ))
+    if [[ -n $container ]] && __zest_is_array $container; then
+      (( ${#${(P)${container}}} == 0 ))
     else
-      [[ -z $actual ]]
+      [[ -z $container ]]
     fi
   }
 }
