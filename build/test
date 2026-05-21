@@ -22,10 +22,4 @@ if ! [[ -d $testdir ]]; then
   exit 1
 fi
 
-source $entrypoint
-
-for file in $testdir/**/*.zsh(.); do
-  zest_print --color=cyan "Loading %B$file%b"
-  source $file
-done
-run_tests
+$entrypoint $testdir/**/*.zsh(.)

@@ -3,13 +3,20 @@
 typeset -g __ZEST_MAIN_FILE
 typeset -g __ZEST_ORIGINAL_CALLER
 typeset -g __ZEST_ROOT_DIR
+typeset -g __ZEST_ZSHRC_PATH
 typeset -ga __ZEST_FUNCTION_DIRS
 typeset -ga __ZEST_FUNCTIONS
 
+
 print -v __ZEST_ORIGINAL_CALLER -P %N
 print -v __ZEST_MAIN_FILE -P %x
+print -v  __ZEST_ZSHRC_PATH ${ZDOTDIR:-$HOME}/.zshrc(:P)
 
-welcome_message() {
+__ZEST_MAIN_FILE=${__ZEST_MAIN_FILE:A}
+__ZEST_ROOT_DIR=${__ZEST_MAIN_FILE:h}
+__ZEST_FUNCTION_DIRS=($__ZEST_ROOT_DIR/src/**/*(/N))
+
+__zest_welcome_message() {
   emulate -L zsh
   autoload -Uz zest_print
 
@@ -33,22 +40,78 @@ welcome_message() {
   buf+=$temp
 }
 
+__zest_run_once() {
+  emulate -L zsh
+
+  () {
+    emulate -L zsh
+
+    setopt errreturn
+
+    local subject
+
+    for subject in $@; do
+      if [[ $subject = -* ]]; then
+        zest_print --color=red "Unknown option: $subject"
+        return 1
+      fi
+
+      source $subject
+    done
+  } $@ || return 1
+
+  run_tests
+}
+
 zest() {
   emulate -L zsh
+
   setopt extendedglob
   setopt errreturn
 
+  autoload -Uz zest_print
 
-  __ZEST_MAIN_FILE=${__ZEST_MAIN_FILE:A}
-  __ZEST_ROOT_DIR=${__ZEST_MAIN_FILE:h}
-  __ZEST_FUNCTION_DIRS=($__ZEST_ROOT_DIR/src/**/*(/N))
+  local was_sourced=false
+
+  if [[ ${options[zle]} = on ]]; then
+    was_sourced=true
+  fi
 
   fpath+=($__ZEST_FUNCTION_DIRS)
   __ZEST_FUNCTIONS=(${~__ZEST_FUNCTION_DIRS/%/***/[^.](#c1,)(#qN.:t)})
   autoload -Uz $__ZEST_FUNCTIONS
 
   zest_initialize
-  welcome_message
+
+  if $was_sourced; then
+    __zest_welcome_message
+    return $?
+  fi
+
+  if (( $#@ > 0 )); then
+    __zest_run_once $@
+    return $?
+  else
+    zmodload zsh/mapfile
+
+    local temp=$(mktemp -d)
+    local currentdir=$PWD
+
+    builtin cd $temp &>/dev/null
+
+    mapfile[.zshrc]="
+		${mapfile[$__ZEST_ZSHRC_PATH]}
+		source $__ZEST_MAIN_FILE
+		builtin cd $currentdir &>/dev/null
+		"
+
+    {
+      ZDOTDIR=$PWD zsh --interactive --zle --rcs
+      } always {
+      print -P "%F{cyan}Quitting%f %F{green}%Bzest%b%f%F{cyan}...%f"
+      return 0
+    }
+  fi
 }
 
-zest
+zest $@
