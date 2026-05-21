@@ -1,8 +1,8 @@
 #!/usr/bin/env zsh
 
 setopt extendedglob
-#setopt pipefail
-#setopt errexit
+setopt pipefail
+setopt errexit
 
 typeset thisfile builddir entrypoint file
 print -v thisfile -P %x
