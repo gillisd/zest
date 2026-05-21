@@ -1,14 +1,43 @@
+#!/usr/bin/env zsh
+
+typeset -g __ZEST_MAIN_FILE
+typeset -g __ZEST_ORIGINAL_CALLER
+typeset -g __ZEST_ROOT_DIR
+typeset -ga __ZEST_FUNCTION_DIRS
+typeset -ga __ZEST_FUNCTIONS
+
+print -v __ZEST_ORIGINAL_CALLER -P %N
+print -v __ZEST_MAIN_FILE -P %x
+
+welcome_message() {
+  emulate -L zsh
+  autoload -Uz zest_print
+
+  local temp
+  local buf
+  local nl=$'\x0a'
+
+  zest_print -n -v temp --color=green "%Bzest%b "
+  buf+=$temp
+  zest_print -v temp --color=cyan "now initialized!"
+  buf+=$nl
+  zest_print -n -v temp --color=cyan "Execute "
+  buf+=$temp
+  zest_print -n -v temp --color=white "%Brun_tests%b"
+  buf+=$temp
+  zest_print -n -v temp --color=cyan " to run any defined "
+  buf+=$temp
+  zest_print -n -v temp --color=white "%Btest_*%b"
+  buf+=$temp
+  zest_print -v temp --color=cyan " functions"
+  buf+=$temp
+}
+
 zest() {
   emulate -L zsh
   setopt extendedglob
   setopt errreturn
 
-  typeset -g __ZEST_MAIN_FILE
-  typeset -g __ZEST_ROOT_DIR
-  typeset -ga __ZEST_FUNCTION_DIRS
-  typeset -ga __ZEST_FUNCTIONS
-
-  print -v __ZEST_MAIN_FILE -P %x
 
   __ZEST_MAIN_FILE=${__ZEST_MAIN_FILE:A}
   __ZEST_ROOT_DIR=${__ZEST_MAIN_FILE:h}
@@ -19,6 +48,7 @@ zest() {
   autoload -Uz $__ZEST_FUNCTIONS
 
   zest_initialize
+  welcome_message
 }
 
 zest
