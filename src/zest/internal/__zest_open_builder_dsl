@@ -8,6 +8,16 @@ fi
 
 local fn
 
+#
+# for each of these (and whatever else is on the DSL API):
+#  check
+#  arg
+#  assertion_message
+#  refutation_message
+#
+# 1. If already defined by user, make a backup copy
+# 2. Define the new DSL functions that end in message
+# 3. The message functions will set a global variable with the message, which will be used by the generated assertion functions. This allows users to call these functions in their test files to customize messages for assertions without worrying about scoping issues.
 for fn in $__zest_builder_dsl_functions; do
   if __zest_is_function_defined $fn; then
     functions -c $fn __zest_original_$fn
@@ -27,7 +37,10 @@ for fn in $__zest_builder_dsl_functions; do
     }
   fi
 done
-
+#
+#
+# Add a "typeset -p'esque" variable definition to the global __zest_builder_dsl_var_arg_defs
+#
 arg() {
   local name=${1}
   local type=${2:-string}

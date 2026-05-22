@@ -1,14 +1,20 @@
 #autoload
 
 emulate -L zsh
+
+setopt extendedglob
+
 local fn
 local var
 local assertion_type
-local new_fn
+local combined_name
+local short_fn_name
+local -a def_names
+local -a defs
 
 __zest_open_builder_dsl
-{
 
+{
   if __zest_is_function_defined check; then
     zest_printerr "INTERNAL ZEST ERROR: Expected function \"check\" to not be defined but was. Cannot continue"
     return 1
@@ -21,11 +27,64 @@ __zest_open_builder_dsl
 
     $fn
 
-    local new_fn=${fn##define_assertion__}
+    short_fn_name=${fn##define_assertion__}
 
     for var in $parameters[(I)__zest_builder_dsl_var_*_message]; do
       assertion_type=${${var##__zest_builder_dsl_var_}%%ion_message}
-      __zest_define_eval_assertion_fn ${assertion_type} ${new_fn} ${(P)var} ${(F)__zest_builder_dsl_var_arg_defs}
+      combined_name=${assertion_type}_${short_fn_name}
+      defs=(${(F)__zest_builder_dsl_var_arg_defs})
+			def_names=(${__zest_builder_dsl_var_arg_defs//(#m)*/${${(z)${MATCH/=*/}}[-1]}})
+      message=\${/message_template/'{expected}'/'%B${expected}%b'}//'{actual}'/'%B${actual}%b'}
+
+      case $assertion_type in
+        assert)
+          eval "
+						${combined_name}() {
+							emulate -L zsh
+
+							$defs
+							local var_name
+							local message=${(qqq)${(P)var}}
+
+							for var_name in $def_names; do
+								message=\${message//{\${var_name}}/\${(P)var_name}}
+							done
+
+							if () { ${functions[check]} } \"\$@\"; then
+								return 0
+							fi
+
+							__zest_record_failure \$message
+							return 1
+						}
+					"
+          ;;
+        refutat)
+          eval "
+						${combined_name//refutat/refute}() {
+							emulate -L zsh
+
+							$defs
+							local var_name
+							local message=${(qqq)${(P)var}}
+
+							for var_name in $def_names; do
+								message=\${message//{\${var_name}}/\${(P)var_name}}
+							done
+
+							if () { ${functions[check]} } \"\$@\"; then
+								__zest_record_failure \$message
+								return 1
+							fi
+
+							return 0
+						}
+					"
+          ;;
+        *)
+          zest_printerr "ZEST INTERNAL ERROR: assertion type ${(qqq)assertion_type} not supported"
+          return 1
+      esac
     done
 
     if ! __zest_is_function_defined check; then
