@@ -1,0 +1,369 @@
+# zest
+
+A testing framework for zsh, written in zsh. Test files are plain zsh
+files, tests are plain zsh functions, and assertions are plain zsh
+functions too — there is no DSL to learn beyond a naming convention.
+
+```zsh
+test_the_obvious() {
+  assert_equal 4 $(( 2 + 2 ))
+}
+```
+
+```
+$ ./zest test/obvious_test.zsh
+
+PASS: the obvious
+
+1 passed, 0 failed, 0 skipped
+```
+
+## Design
+
+Two decisions shape everything else:
+
+**Unchecked failures fail the test.** Before each test runs, zest
+injects `emulate -L zsh; setopt pipefail errreturn` into the function
+body. Any command that exits nonzero — anywhere in the test, in a
+pipeline or not — fails the test on the spot. The single most common
+bug in shell test suites is a failing command whose status nobody
+checked, followed by an assertion that passes vacuously; under zest
+that test fails.
+
+**Everything is a zsh function.** Tests are functions named `test_*`,
+discovered at run time from `$functions`. Hooks are functions named
+`setup` and `teardown`. Assertions are generated functions. This means
+ordinary zsh metaprogramming works: you can build tests in a loop,
+wrap assertions, or define project-specific assertions in a few lines.
+
+## Requirements
+
+zsh. Developed and tested against zsh 5.9. No external dependencies —
+the runner, assertions, and output formatting are all zsh.
+
+## Installation
+
+Clone (or vendor) the repository and run the `zest` script at its
+root. Nothing needs to be on `$PATH`, installed, or compiled:
+
+```
+$ git clone <this repository> zest
+$ ./zest/zest path/to/my_test.zsh
+```
+
+Vendoring the `zest` script plus the `src/` directory into a project
+is fully supported — that is all the runner needs.
+
+## Quick start
+
+A test file is sourced top to bottom, so it can define the code under
+test (or source it), hooks, and tests together:
+
+```zsh
+slugify() {
+  emulate -L zsh
+  setopt extendedglob pipefail errreturn
+  print -r -- ${${1:l}//[^a-z0-9]##/-}
+}
+
+setup() {
+  typeset -g TDIR=$(mktemp -d)
+}
+
+teardown() {
+  rm -rf $TDIR
+}
+
+test_lowercases_and_hyphenates() {
+  run slugify 'Hello World'
+  assert_equal 0 $rc
+  assert_equal hello-world $out
+}
+
+test_collapses_runs_of_punctuation() {
+  run slugify 'a -- b'
+  assert_equal a-b $out
+}
+
+test_writes_nothing_to_stderr() {
+  run slugify anything
+  assert_empty "$err"
+}
+
+test_files_can_be_created_per_test() {
+  print ok > $TDIR/artifact
+  assert_file_exists $TDIR/artifact
+}
+
+test_not_ready_yet() {
+  skip 'waiting on unicode tables'
+}
+```
+
+```
+$ ./zest slug_test.zsh
+
+PASS: collapses runs of punctuation
+PASS: files can be created per test
+PASS: lowercases and hyphenates
+SKIP: not ready yet (waiting on unicode tables)
+PASS: writes nothing to stderr
+
+4 passed, 0 failed, 1 skipped
+```
+
+Underscores in test names become spaces in the report. Failures are
+listed after the run with the assertion's message and the source
+location, and the process exits 1:
+
+```
+Failures:
+
+  1) demo failure (:3)
+     Failure/Error: five != 5
+
+0 passed, 1 failed, 0 skipped
+```
+
+Note the `emulate -L zsh; setopt extendedglob pipefail errreturn`
+preamble on `slugify`: zest injects options into *test* functions
+only. Functions under test get whatever options they declare — the
+`##` glob above silently matches nothing without `extendedglob`.
+
+## How tests run
+
+For each `test_*` function, in `${(o)}` (sorted) order:
+
+1. `rc`, `out`, and `err` are reset.
+2. `setup` runs, if defined. A failing `setup` records a failure.
+3. The test body runs with `pipefail` and `errreturn` in force. The
+   first failing assertion *or unchecked failing command* ends the
+   test; execution does not continue to later assertions.
+4. `teardown` runs, if defined.
+
+`setup` and `teardown` run around **every** test, so per-test temp
+directories like the one in the quick start are cheap and isolated.
+Both hooks are global functions: if you pass several test files to one
+`zest` invocation, a later file's `setup` replaces an earlier one's.
+Run one file per invocation when files need different hooks.
+
+## The `run` helper
+
+`run cmd args...` executes the command and captures three globals:
+
+| variable | contents                                          |
+| -------- | ------------------------------------------------- |
+| `$out`   | standard output, trailing newlines stripped       |
+| `$err`   | standard error, trailing newline stripped         |
+| `$rc`    | exit status                                       |
+
+`run` itself always returns 0, which is the point: it lets you
+exercise failing commands under `errreturn` and assert on the result.
+
+```zsh
+test_rejects_missing_arguments() {
+  run my_tool
+  assert_equal 2 $rc
+  assert_contains $err 'usage:'
+}
+```
+
+Two things `run` cannot capture:
+
+- **Byte-exact output.** Command substitution strips trailing
+  newlines. When the exact bytes matter, redirect to a file and
+  compare with `cmp` or inspect with `wc -c`.
+- **Standard input.** `run` does not feed stdin. Pipe into a captured
+  assignment instead, and guard the status so `errreturn` does not end
+  the test early — and note that `status` is read-only in zsh, so pick
+  another name:
+
+```zsh
+test_reads_standard_input() {
+  integer zstat=0
+  out="$(print -rn 'input' | my_filter 2>/dev/null)" || zstat=$?
+  assert_equal 0 $zstat
+  assert_equal expected $out
+}
+```
+
+## Assertions
+
+Ten built-in assertions, each with a `refute_` mirror that inverts the
+check and the message:
+
+| assertion                    | passes when                                            |
+| ---------------------------- | ------------------------------------------------------ |
+| `assert_equal expected got`  | the two values match (`[[ $got = $expected ]]`)        |
+| `assert_match value pattern` | the value matches the regex (`[[ value =~ pattern ]]`) |
+| `assert_contains c item`     | array `c` has an element `item`, or scalar contains it |
+| `assert_empty c`             | array `c` has no elements, or the scalar value is `""` |
+| `assert_true value`          | the value is truthy                                    |
+| `assert_false value`         | the value is falsey                                    |
+| `assert_defined name`        | a parameter with that name exists                      |
+| `assert_greater_than a b`    | `a > b` (integers)                                     |
+| `assert_less_than a b`       | `a < b` (integers)                                     |
+| `assert_file_exists path`    | the path exists                                        |
+
+`assert_contains` and `assert_empty` are polymorphic: given the **name
+of an array**, they inspect the array; given anything else, they treat
+the argument as a **scalar value**. The trap to know:
+`assert_empty out` asserts that the three-character string `out` is
+empty (it never is) — for scalars, pass the value:
+
+```zsh
+assert_empty "$out"      # right: the value
+assert_empty my_array    # right: the array, by name
+```
+
+Quoting `"$out"` matters in the empty case — an unquoted empty scalar
+expands to no argument at all, which happens to pass, but the quoted
+form says what it means.
+
+## Skipping
+
+`skip` (optionally with a message) marks the current test skipped; the
+message appears in the report. Skips do not affect the exit status.
+
+```zsh
+test_needs_network() {
+  (( $+commands[curl] )) || skip 'curl not installed'
+  ...
+}
+```
+
+## Custom assertions
+
+The built-in assertions are generated from declarative definitions,
+and the same builder is available to test files. Define a
+`define_assertion__<name>` function, then rebuild:
+
+```zsh
+define_assertion__valid_zsh() {
+  arg file
+
+  assertion_message "expected {file} to be valid zsh but it has syntax errors"
+  refutation_message "expected {file} to have syntax errors but it is valid zsh"
+
+  check() {
+    zsh -n $file 2>/dev/null
+  }
+}
+__zest_build_assertions
+```
+
+That one definition yields both `assert_valid_zsh` and
+`refute_valid_zsh`, with `{file}` interpolated into failure messages.
+`arg` declares the positional parameters `check()` sees, in order; a
+second word declares a type (`arg count integer` — `string` is the
+default). The rebuild call is needed because assertions are generated
+at startup, before test files are sourced.
+
+## Generating tests programmatically
+
+Because discovery reads `$functions` at `run_tests` time, tests
+created at source time are first-class. One pattern — a test per
+fixture, so the runner output doubles as a per-fixture report:
+
+```zsh
+typeset -ga FIXTURES=(alpha beta gamma)
+
+length_check() {
+  emulate -L zsh
+  local word=$1
+  assert_greater_than $#word 3
+}
+
+() {
+  emulate -L zsh
+  local word
+  for word in $FIXTURES; do
+    functions[test_${word}_is_long_enough]="length_check ${(q)word}"
+  done
+}
+```
+
+```
+PASS: alpha is long enough
+PASS: beta is long enough
+PASS: gamma is long enough
+```
+
+Note the `${(q)word}` — function bodies built from strings need their
+data quoted. This pattern scales: it has been used to generate a
+several-hundred-file corpus sweep where every file is its own
+PASS/FAIL line.
+
+## Running
+
+```
+$ ./zest FILE...
+```
+
+sources each file, then runs every `test_*` function. The exit status
+is 0 when nothing failed, 1 otherwise (skips don't fail), so it drops
+straight into CI and Make/Rake targets.
+
+`run_tests` itself accepts arguments when you call it directly —
+explicit test names, and `-n SUBSTRING` to filter by name:
+
+```zsh
+run_tests -n parse        # every test whose name contains "parse"
+run_tests test_one test_two
+```
+
+With **no file arguments**, `./zest` opens an interactive zsh with the
+framework loaded — define or source tests, then call `run_tests`
+(re-running after edits, filtering with `-n`) without restarting.
+Sourcing `./zest` into an existing interactive shell loads the same
+environment in place.
+
+## CI
+
+The runner currently resolves `${ZDOTDIR:-$HOME}/.zshrc` at startup
+and errors if it does not exist — true of most fresh CI containers.
+Until that's fixed, point `ZDOTDIR` at a directory containing an empty
+`.zshrc`. A Rake task that does so:
+
+```ruby
+task :zest do
+  zdotdir = File.join(Dir.tmpdir, 'zest-zdotdir')
+  mkdir_p zdotdir
+  touch File.join(zdotdir, '.zshrc')
+  Dir['test/zest/*_test.zsh'].each do |suite|
+    sh({ 'ZDOTDIR' => zdotdir }, 'zsh', 'vendor/zest/zest', suite)
+  end
+end
+```
+
+Output is ANSI-colored unconditionally; strip with
+`sed 's/\x1b\[[0-9;]*m//g'` when capturing logs.
+
+## Things to know
+
+- A test stops at its **first** failing assertion or unchecked
+  command; one failure is recorded per test.
+- `zsh` reserves the parameter name `status` (it aliases `$?`); using
+  it as a variable in a test is a hard error. Pick another name.
+- Per-invocation `setup`/`teardown` scope: run files with different
+  hooks in separate invocations.
+- `run` strips trailing newlines; use files + `cmp` for byte-exact
+  assertions.
+- Tests run in the sourcing shell, not subshells — `typeset -g`
+  state persists across tests in a file. Reset shared state in
+  `setup`.
+
+## Layout
+
+```
+zest                 the runner: source it or execute it
+src/zest/            autoloaded framework functions
+  run                the $out/$err/$rc capture helper
+  run_tests          discovery, hooks, reporting
+  assertions/        built-in assertion definitions + assert/refute/skip
+  internal/          builder DSL, state management, reporting internals
+test/                zest's own test suite, written in zest
+```
+
+To check the framework itself: `./zest test/**/*.zsh` — at the time of
+writing, 114 self-tests pass.
