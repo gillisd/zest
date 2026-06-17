@@ -1,5 +1,7 @@
 #autoload
 
+emulate -L zsh
+
 local -A opt_args
 local -a print_opts
 local string
@@ -15,11 +17,6 @@ zparseopts \
   -color:
 (( ? != 0 )) && return 1
 
-local var
-if (( $+opt_args[--var] )); then
-  print_opts+=(-v ${opt_args[--var]##=})
-fi
-
 if (( $+opt_args[-v] )); then
   print_opts+=(-v ${opt_args[-v]})
 fi
@@ -29,9 +26,18 @@ if (( $+opt_args[--color] )); then
   color=${opt_args[--color]##=}
 fi
 
-integer string_start_index=${@[(i)[^-]*]}
+integer string_start_index
 integer string_end_index=${#@}
-print_opts=(${@[1,$((string_start_index - 1))]})
+integer separator_index=${@[(i)--]}
+
+if (( separator_index <= string_end_index )); then
+  print_opts+=(${@[1,$((separator_index - 1))]})
+  string_start_index=$(( separator_index + 1 ))
+else
+  string_start_index=${@[(i)[^-]*]}
+  print_opts+=(${@[1,$((string_start_index - 1))]})
+fi
+
 string="${@[$string_start_index, $string_end_index]}"
 
 if [[ -n $color ]]; then
@@ -39,8 +45,8 @@ if [[ -n $color ]]; then
   if ! (( $print_opts[(I)-P] )); then
     print_opts+=(-P)
   fi
-else
-  print_opts+=(--)
 fi
+
+print_opts+=(--)
 
 builtin print $print_opts $string

@@ -1,16 +1,14 @@
 #!/usr/bin/env zsh
 
 typeset -g __ZEST_MAIN_FILE
-typeset -g __ZEST_ORIGINAL_CALLER
 typeset -g __ZEST_ROOT_DIR
-typeset -g __ZEST_ZSHRC_PATH
+typeset -g __ZEST_EVAL_CONTEXT
 typeset -ga __ZEST_FUNCTION_DIRS
 typeset -ga __ZEST_FUNCTIONS
 
 
-print -v __ZEST_ORIGINAL_CALLER -P %N
+__ZEST_EVAL_CONTEXT=$ZSH_EVAL_CONTEXT
 print -v __ZEST_MAIN_FILE -P %x
-print -v  __ZEST_ZSHRC_PATH ${ZDOTDIR:-$HOME}/.zshrc(:P)
 
 __ZEST_MAIN_FILE=${__ZEST_MAIN_FILE:A}
 __ZEST_ROOT_DIR=${__ZEST_MAIN_FILE:h}
@@ -26,8 +24,8 @@ __zest_welcome_message() {
 
   zest_print -n -v temp --color=green "%Bzest%b "
   buf+=$temp
-  zest_print -v temp --color=cyan "now initialized!"
-  buf+=$nl
+  zest_print -n -v temp --color=cyan "now initialized!"
+  buf+=$temp$nl
   zest_print -n -v temp --color=cyan "Execute "
   buf+=$temp
   zest_print -n -v temp --color=white "%Brun_tests%b"
@@ -36,8 +34,10 @@ __zest_welcome_message() {
   buf+=$temp
   zest_print -n -v temp --color=white "%Btest_*%b"
   buf+=$temp
-  zest_print -v temp --color=cyan " functions"
+  zest_print -n -v temp --color=cyan " functions"
   buf+=$temp
+
+  print -- $buf
 }
 
 __zest_run_once() {
@@ -73,7 +73,7 @@ zest() {
 
   local was_sourced=false
 
-  if [[ ${options[zle]} = on ]]; then
+  if [[ $__ZEST_EVAL_CONTEXT = *:file ]]; then
     was_sourced=true
   fi
 
@@ -84,8 +84,10 @@ zest() {
   zest_initialize
 
   if $was_sourced; then
-    __zest_welcome_message
-    return $?
+    if [[ -o interactive ]]; then
+      __zest_welcome_message
+    fi
+    return 0
   fi
 
   if (( $#@ > 0 )); then
@@ -93,14 +95,21 @@ zest() {
     return $?
   else
     zmodload zsh/mapfile
+    zmodload -F zsh/files b:zf_rm
 
     local temp=$(mktemp -d)
     local currentdir=$PWD
+    local user_rc=""
+    local -a zshrc_path=(${ZDOTDIR:-$HOME}/.zshrc(N:P))
+
+    if (( $#zshrc_path )); then
+      user_rc=${mapfile[$zshrc_path[1]]}
+    fi
 
     builtin cd $temp &>/dev/null
 
     mapfile[.zshrc]="
-		${mapfile[$__ZEST_ZSHRC_PATH]}
+		$user_rc
 		source $__ZEST_MAIN_FILE
 		builtin cd $currentdir &>/dev/null
 		"
@@ -108,8 +117,11 @@ zest() {
     {
       ZDOTDIR=$PWD zsh --interactive --zle --rcs
       } always {
+      integer nested_rc=$?
+      builtin cd $currentdir &>/dev/null
+      zf_rm -rf $temp
       print -P "%F{cyan}Quitting%f %F{green}%Bzest%b%f%F{cyan}...%f"
-      return 0
+      return $nested_rc
     }
   fi
 }

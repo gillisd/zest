@@ -4,11 +4,15 @@ emulate -L zsh
 
 setopt extendedglob
 
+zmodload -F zsh/files b:zf_rm
+
 # ── state ────────────────────────────────────────────────────────────────
 typeset -gi zest_pass=0 zest_fail=0 zest_skip=0
 typeset -ga zest_failures
 typeset -g zest_current_test
 typeset -g zest_current_failed
+typeset -g zest_current_skipped=false
+typeset -g zest_current_skip_msg=""
 
 typeset -gi __zest_failure_index=0
 typeset -gi __zest_func_index
@@ -32,7 +36,10 @@ typeset -ga __zest_builder_dsl_functions=(
 
 typeset -g __zest_builder_dsl_open=false
 
-source $__ZEST_ROOT_DIR/src/zest/assertions/*.zsh
+local __zest_assertion_file
+for __zest_assertion_file in $__ZEST_ROOT_DIR/src/zest/assertions/*.zsh(.N); do
+  source $__zest_assertion_file
+done
 
 __zest_initialize_public_global_vars
 __zest_build_assertions

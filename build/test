@@ -9,7 +9,7 @@ print -v thisfile -P %x
 
 thisfile=${thisfile:P}
 builddir=${thisfile:h}
-entrypoint=${builddir:h}/zest
+entrypoint=${1:-${builddir:h}/zest}
 testdir=${builddir:h}/test
 
 if ! [[ -f $entrypoint ]]; then

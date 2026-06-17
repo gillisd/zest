@@ -34,3 +34,22 @@ test_zest_removes_main_functions() {
     assert_equal 1 $val
   done
 }
+
+test_zest_quit_removes_generated_assertions_and_helpers() {
+  local def="$(
+    zest_quit
+    print "fns=(
+  [assert_equal]="$(functions assert_equal >/dev/null 2>&1 && print 0 || print 1)"
+  [refute_match]="$(functions refute_match >/dev/null 2>&1 && print 0 || print 1)"
+  [skip]="$(functions skip >/dev/null 2>&1 && print 0 || print 1)"
+  [zest_print]="$(functions zest_print >/dev/null 2>&1 && print 0 || print 1)"
+  [internal]="$(functions __zest_record_failure >/dev/null 2>&1 && print 0 || print 1)"
+  )"
+  )"
+  local -A fns
+  local val
+  eval $def
+  for val in $fns; do
+    assert_equal 1 $val
+  done
+}

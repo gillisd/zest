@@ -1,8 +1,20 @@
 #autoload
 emulate -L zsh
 
-unfunction assert
-unfunction run_tests
-unfunction run
+local -a doomed
+doomed+=(${functions[(I)assert_*]})
+doomed+=(${functions[(I)refute_*]})
+doomed+=(${functions[(I)zest_*]})
+doomed+=(assert refute run run_tests skip)
+
 __zest_cleanup_public_global_vars
 __zest_cleanup_zest_vars
+
+doomed+=(${functions[(I)__zest_*]})
+
+local fn
+for fn in ${(u)doomed}; do
+  if (( $+functions[$fn] )); then
+    unfunction $fn
+  fi
+done

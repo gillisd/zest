@@ -1,5 +1,7 @@
 #autoload
 
+emulate -L zsh
+
 local expected=${1:-0}
 local message="${@[2,-1]}"
 if assert $expected; then

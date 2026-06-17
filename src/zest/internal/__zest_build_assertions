@@ -34,7 +34,6 @@ __zest_open_builder_dsl
       combined_name=${assertion_type}_${short_fn_name}
       defs=(${(F)__zest_builder_dsl_var_arg_defs})
 			def_names=(${__zest_builder_dsl_var_arg_defs//(#m)*/${${(z)${MATCH/=*/}}[-1]}})
-      message=\${/message_template/'{expected}'/'%B${expected}%b'}//'{actual}'/'%B${actual}%b'}
 
       case $assertion_type in
         assert)

@@ -1,3 +1,5 @@
 #autoload
 
+emulate -L zsh
+
 zest_print -u2 --color=red $@

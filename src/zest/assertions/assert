@@ -1,4 +1,7 @@
 #autoload
+
+emulate -L zsh
+
 local expected=${1:-0}
 local message="${@[2,-1]}"
 local rc
@@ -11,7 +14,7 @@ case $expected in
     (*) rc=0 ;;
 esac
 
-if [[ -n $message ]]; then
+if (( rc != 0 )) && [[ -n $message ]]; then
   __zest_record_failure $message
 fi
 

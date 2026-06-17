@@ -8,9 +8,13 @@ then
 fi
 
 __zest_internal_setup
+
+integer setup_rc=0
 if (( $+functions[setup] )); then
-  setup; local setup_rc=$?
+  setup; setup_rc=$?
   if (( setup_rc != 0 )); then
-    __zest_record_failure "setup returned non-zero: $setup_rc"
+    __zest_record_failure "setup returned non-zero: $setup_rc" ${functions_source[setup]:-unknown}
   fi
 fi
+
+return $setup_rc

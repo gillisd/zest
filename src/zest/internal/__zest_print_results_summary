@@ -1,6 +1,12 @@
 #autoload
 
-local results_string="$zest_pass passed, $zest_fail failed${zest_skip:+, $zest_skip skipped}"
+emulate -L zsh
+
+local results_string="$zest_pass passed, $zest_fail failed"
+if (( zest_skip > 0 )); then
+  results_string+=", $zest_skip skipped"
+fi
+
 if (( zest_fail > 0 )); then
   print "Failures: "
   print

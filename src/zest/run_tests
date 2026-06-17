@@ -1,8 +1,14 @@
 #autoload
 
+emulate -L zsh
+setopt extendedglob
+# Deliberately NOT errreturn: this loop must survive failing tests; every
+# status below is checked explicitly.
+
 print
 zest_pass=0; zest_fail=0; zest_skip=0
 zest_failures=()
+__zest_failure_index=0
 
 local -A opts
 zparseopts -D -E -K -A opts -- n:
@@ -25,7 +31,9 @@ if (( $#test_funcs == 0 )); then
 fi
 
 local func
-local funcbody
+local label
+integer func_rc
+integer setup_rc
 __zest_func_index=0
 __zest_func_count=$#test_funcs
 for func in $test_funcs; do
@@ -35,26 +43,27 @@ for func in $test_funcs; do
   zest_current_skipped=false
   zest_current_skip_msg=""
   rc=0; out=""; err=""
+  func_rc=0
 
-  __zest_run_setup_hooks
-  funcbody="emulate -L zsh; setopt pipefail errreturn;"
-  funcbody+=$'\x0a'
-  funcbody=${funcbody}${functions[$func]}
-  functions[$func]=$funcbody
+  if (( $+functions[$func] )); then
+    __zest_run_setup_hooks
+    setup_rc=$?
 
-  $func; local func_rc=$?
+    if (( setup_rc == 0 )); then
+      __zest_invoke_test $func
+      func_rc=$?
+    fi
 
-  if (( func_rc != 0 )) && ! $zest_current_failed; then
-    zest_current_failed=true
-    local location=${functions_source[$func]:-unknown}
-    (( failure_index = ${#zest_failures} + 1 ))
-    zest_failures+=("  ${failure_index}) ${zest_current_test//_/ } ($location)")
-    zest_failures+=("    test returned non-zero: $func_rc")
+    if (( func_rc != 0 )) && ! $zest_current_failed; then
+      __zest_record_failure "test returned non-zero: $func_rc" ${functions_source[$func]:-unknown}
+    fi
+
+    __zest_run_teardown_hooks
+  else
+    __zest_record_failure "no such test function: $func"
   fi
 
-  __zest_run_teardown_hooks
-
-  local label=${zest_current_test//_/ }
+  label=${zest_current_test//_/ }
 
   if $zest_current_skipped; then
     zest_print -n --color=yellow "SKIP"

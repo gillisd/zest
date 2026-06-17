@@ -119,7 +119,7 @@ location, and the process exits 1:
 ```
 Failures:
 
-  1) demo failure (:3)
+  1) demo failure (demo_test.zsh:3)
      Failure/Error: five != 5
 
 0 passed, 1 failed, 0 skipped
@@ -135,7 +135,8 @@ only. Functions under test get whatever options they declare — the
 For each `test_*` function, in `${(o)}` (sorted) order:
 
 1. `rc`, `out`, and `err` are reset.
-2. `setup` runs, if defined. A failing `setup` records a failure.
+2. `setup` runs, if defined. A failing `setup` records a failure,
+   the test body is **skipped**, and `teardown` still runs.
 3. The test body runs with `pipefail` and `errreturn` in force. The
    first failing assertion *or unchecked failing command* ends the
    test; execution does not continue to later assertions.
@@ -320,21 +321,9 @@ environment in place.
 
 ## CI
 
-The runner currently resolves `${ZDOTDIR:-$HOME}/.zshrc` at startup
-and errors if it does not exist — true of most fresh CI containers.
-Until that's fixed, point `ZDOTDIR` at a directory containing an empty
-`.zshrc`. A Rake task that does so:
-
-```ruby
-task :zest do
-  zdotdir = File.join(Dir.tmpdir, 'zest-zdotdir')
-  mkdir_p zdotdir
-  touch File.join(zdotdir, '.zshrc')
-  Dir['test/zest/*_test.zsh'].each do |suite|
-    sh({ 'ZDOTDIR' => zdotdir }, 'zsh', 'vendor/zest/zest', suite)
-  end
-end
-```
+The runner needs nothing from the environment: no `.zshrc`, no
+configuration, nothing on `$PATH`. `./zest path/to/tests.zsh` works
+as-is in a fresh container.
 
 Output is ANSI-colored unconditionally; strip with
 `sed 's/\x1b\[[0-9;]*m//g'` when capturing logs.
@@ -343,6 +332,9 @@ Output is ANSI-colored unconditionally; strip with
 
 - A test stops at its **first** failing assertion or unchecked
   command; one failure is recorded per test.
+- `run_tests` can be invoked repeatedly in one session: function
+  bodies are never modified, failure locations stay stable, and
+  failure numbering restarts each run.
 - `zsh` reserves the parameter name `status` (it aliases `$?`); using
   it as a variable in a test is a hard error. Pick another name.
 - Per-invocation `setup`/`teardown` scope: run files with different

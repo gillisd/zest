@@ -1,0 +1,10 @@
+#autoload
+
+# Runs one test function with zest's guarantees in force. Options set here
+# propagate into the called function (zsh options are dynamically scoped),
+# so the test body gets pipefail/errreturn without zest mutating the
+# function's source -- functions_source and funcfiletrace stay real.
+emulate -L zsh
+setopt pipefail errreturn
+
+$1

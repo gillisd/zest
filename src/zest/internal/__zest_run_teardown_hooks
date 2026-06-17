@@ -6,7 +6,7 @@ __zest_internal_teardown
 if (( $+functions[teardown] )); then
   teardown; local teardown_rc=$?
   if (( teardown_rc != 0 )); then
-    __zest_record_failure "teardown returned non-zero: $teardown_rc"
+    __zest_record_failure "teardown returned non-zero: $teardown_rc" ${functions_source[teardown]:-unknown}
   fi
 fi
 

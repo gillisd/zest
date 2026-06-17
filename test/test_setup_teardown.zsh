@@ -27,3 +27,25 @@ test_setup_failure_is_recorded() {
   unfunction setup test_after_bad_setup
   assert_equal 1 $rc
 }
+
+test_setup_failure_skips_test_body() {
+  setup() { return 1 }
+  test_st_inner_marker() { print BODY_EXECUTED_MARKER }
+
+  run run_tests test_st_inner_marker
+  unfunction setup test_st_inner_marker
+  assert_equal 1 $rc
+  refute_contains $out BODY_EXECUTED_MARKER
+}
+
+test_teardown_still_runs_after_setup_failure() {
+  setup() { return 1 }
+  teardown() { print TEARDOWN_RAN_MARKER }
+  test_st_inner_td() { print BODY_EXECUTED_MARKER }
+
+  run run_tests test_st_inner_td
+  unfunction setup teardown test_st_inner_td
+  assert_equal 1 $rc
+  assert_contains $out TEARDOWN_RAN_MARKER
+  refute_contains $out BODY_EXECUTED_MARKER
+}
