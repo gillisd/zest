@@ -1,0 +1,22 @@
+#autoload
+
+emulate -L zsh
+
+# Read and discard whatever is currently sitting on the session's master
+# side. The interactive shell continuously writes prompt redraws and input
+# echo to the pty slave; if we never read the master, the kernel pty buffer
+# fills and the SHELL itself blocks on write -- mid-widget, before it can
+# hand us state through the side-channel file -- and every wait then times
+# out. Linux pty buffers are large enough to mask this for short sessions;
+# macOS buffers are small (~1KB), so without draining the harness wedges
+# there. This output is never parsed: the state file carries the answers,
+# and this only keeps the slave from blocking. Non-blocking via -t, so it
+# returns the moment nothing more is available.
+[[ -n $__zest_tty_session ]] || return 0
+
+local discard
+while zpty -r -t $__zest_tty_session discard 2>/dev/null; do
+  :
+done
+
+return 0

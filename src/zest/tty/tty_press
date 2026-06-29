@@ -11,5 +11,6 @@ local key
 for key in "$@"; do
   zpty -w -n $__zest_tty_session "${(g:ce:)key}"
 done
+__zest_tty_drain
 typeset -g __zest_tty_stale=true
 return 0
