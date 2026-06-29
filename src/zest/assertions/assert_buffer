@@ -2,9 +2,8 @@
 
 emulate -L zsh
 
-local want=${(V)1}
 __zest_tty_snapshot || return 1
 
-[[ $zest_tty_buffer = $want ]] && return 0
+[[ $zest_tty_buffer == "$1" ]] && return 0
 __zest_record_failure "expected BUFFER to be ${(qqq)1} but was ${(qqq)zest_tty_buffer}"
 return 1

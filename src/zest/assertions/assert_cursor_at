@@ -2,13 +2,12 @@
 
 emulate -L zsh
 
-local want=$1
 __zest_tty_snapshot || return 1
 
-if [[ $zest_tty_cursor = <-> && $want = <-> ]]; then
-  (( zest_tty_cursor == want )) && return 0
-elif [[ $zest_tty_cursor = $want ]]; then
+if [[ $zest_tty_cursor == <-> && $1 == <-> ]]; then
+  (( zest_tty_cursor == $1 )) && return 0
+elif [[ $zest_tty_cursor == "$1" ]]; then
   return 0
 fi
-__zest_record_failure "expected CURSOR at ${(qqq)want} but was at ${(qqq)zest_tty_cursor}"
+__zest_record_failure "expected CURSOR at ${(qqq)1} but was at ${(qqq)zest_tty_cursor}"
 return 1

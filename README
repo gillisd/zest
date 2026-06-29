@@ -353,7 +353,10 @@ The session helpers:
   own.
 - `tty_run cmd` -- executes one complete command line in the session and
   waits for it to finish. Use it to define widgets and bindings inline.
-- `tty_type text` -- sends literal keystrokes, no newline.
+- `tty_type text` -- sends literal keystrokes, no newline. Keep it
+  keystroke-sized: to place bulk text in the buffer, set `BUFFER=` from a
+  widget instead, since a multi-kilobyte single write can deadlock against
+  the child's own redraw output where pty buffers are small.
 - `tty_press key ...` -- sends key chords in caret or escape notation:
   `'^T'`, `'^A'`, `'\e'`.
 - `tty_stop` -- ends the session early. You rarely need it: zest tears
@@ -368,6 +371,13 @@ Things to know:
 
 - State assertions only: zest deliberately does not assert on rendered
   screen contents. Buffer and cursor are deterministic; screens are not.
+- Comparisons are exact: `assert_buffer`/`refute_buffer` match the buffer
+  byte-for-byte against the literal string you pass, so buffers holding
+  control characters, embedded newlines, or shell metacharacters are
+  matched precisely -- and an expected value that looks like a glob (e.g.
+  `"a*"`) is compared literally, not as a pattern. State crosses the pty in
+  a reversible `(q+)` encoding and is decoded with `(Q)`, so nothing is
+  aliased or lost in transit.
 - Structure widgets as thin shims over pure functions where you can, and
   unit-test the pure functions with ordinary zest tests. Reserve the tty
   layer for bindings, builtin-widget interplay, and keymap behavior.

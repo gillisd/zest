@@ -7,30 +7,35 @@ if [[ -z $__zest_tty_session ]]; then
   return 1
 fi
 
-zpty -w -n $__zest_tty_session $'\C-x'
+zpty -w -n $__zest_tty_session $'\C-x' 2>/dev/null
 
-if ! __zest_tty_expect "*<zest-snap>*<zest-snap-end>*"; then
+if ! __zest_tty_expect "*ZESTSNAPSTART*ZESTSNAPEND*"; then
   local poisoned="<tty snapshot unavailable: session ended>"
   zest_tty_buffer=$poisoned zest_tty_cursor=$poisoned
   zest_tty_lbuffer=$poisoned zest_tty_rbuffer=$poisoned zest_tty_keymap=$poisoned
   return 1
 fi
 
-# Parse the LAST snapshot block; discard any echo/redraw noise before it. Each
-# field is "X:value" on its own line; the pty appends a CR we strip. Prefix
-# patterns are used so this does not depend on the extendedglob option.
-local block=${REPLY##*<zest-snap>}
-block=${block%%<zest-snap-end>*}
+# Parse the LAST snapshot block; discard echo/redraw noise before it. The
+# markers are plain alphanumerics so they match literally in every context
+# with no quoting: a "<...>" marker would be read as a numeric-range glob (or,
+# in command position, as a redirection -- a parse error). Each field is
+# "X:value" on its own line; the pty appends a CR that is stripped. B/L/R are sent
+# through (q+) and decoded with (Q), so the bytes are exact -- multi-line,
+# control bytes and quoting metacharacters all survive. Prefix patterns avoid
+# depending on the extendedglob option (off under emulate -L zsh).
+local block=${REPLY##*ZESTSNAPSTART}
+block=${block%%ZESTSNAPEND*}
 
-local line
+local line val
 for line in ${(f)block}; do
   line=${line%$'\r'}
   case $line in
-    (B:*) zest_tty_buffer=${line#B:}  ;;
-    (C:*) zest_tty_cursor=${line#C:}  ;;
-    (L:*) zest_tty_lbuffer=${line#L:} ;;
-    (R:*) zest_tty_rbuffer=${line#R:} ;;
-    (K:*) zest_tty_keymap=${line#K:}  ;;
+    (B:*) val=${line#B:}; zest_tty_buffer=${(Q)val}  ;;
+    (C:*) zest_tty_cursor=${line#C:}                 ;;
+    (L:*) val=${line#L:}; zest_tty_lbuffer=${(Q)val} ;;
+    (R:*) val=${line#R:}; zest_tty_rbuffer=${(Q)val} ;;
+    (K:*) zest_tty_keymap=${line#K:}                 ;;
   esac
 done
 

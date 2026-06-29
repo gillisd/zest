@@ -7,5 +7,5 @@ if [[ -z $__zest_tty_session ]]; then
   return 1
 fi
 
-zpty -w -n $__zest_tty_session "$*"
+zpty -w -n $__zest_tty_session "$*" 2>/dev/null
 return 0

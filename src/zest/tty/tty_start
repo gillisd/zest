@@ -45,7 +45,7 @@ bindkey -e
 __zest_snapshot_widget() {
   emulate -L zsh
   local b=$BUFFER c=$CURSOR l=$LBUFFER r=$RBUFFER k=$KEYMAP
-  print -lr -- $'\n<zest-snap>' "B:${(V)b}" "C:$c" "L:${(V)l}" "R:${(V)r}" "K:$k" '<zest-snap-end>'
+  print -lr -- $'\nZESTSNAPSTART' "B:${(q+)b}" "C:$c" "L:${(q+)l}" "R:${(q+)r}" "K:$k" 'ZESTSNAPEND'
   zle -R
 }
 zle -N __zest_snapshot_widget

@@ -9,6 +9,6 @@ fi
 
 local key
 for key in "$@"; do
-  zpty -w -n $__zest_tty_session "${(g:ce:)key}"
+  zpty -w -n $__zest_tty_session "${(g:ce:)key}" 2>/dev/null
 done
 return 0
