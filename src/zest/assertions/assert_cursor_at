@@ -1,0 +1,18 @@
+#autoload
+
+emulate -L zsh
+
+local expected=$1
+
+__zest_tty_refresh || return 1
+
+if [[ $zest_tty_cursor = <-> && $expected = <-> ]]; then
+  if (( zest_tty_cursor == expected )); then
+    return 0
+  fi
+elif [[ $zest_tty_cursor = $expected ]]; then
+  return 0
+fi
+
+__zest_record_failure "expected CURSOR at ${(qqq)expected} but was at ${(qqq)zest_tty_cursor}"
+return 1

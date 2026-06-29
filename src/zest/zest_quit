@@ -6,6 +6,11 @@ doomed+=(${functions[(I)assert_*]})
 doomed+=(${functions[(I)refute_*]})
 doomed+=(${functions[(I)zest_*]})
 doomed+=(assert refute run run_tests skip)
+doomed+=(${functions[(I)tty_*]})
+
+if [[ -n $__zest_tty_session ]]; then
+  __zest_tty_cleanup
+fi
 
 __zest_cleanup_public_global_vars
 __zest_cleanup_zest_vars

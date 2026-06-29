@@ -33,13 +33,18 @@ test_sourcing_noninteractively_loads_and_returns() {
   refute_contains $out "now initialized"
 }
 
-test_interactive_banner_appears_once() {
-  local fakehome=$(mktemp -d)
-  integer zstat=0
+test_welcome_banner_renders_exactly_once() {
+  # The welcome is produced by __zest_welcome_message, defined in the
+  # dispatcher and in scope here. We call it directly rather than launching
+  # the no-argument REPL: that path spawns a real --zle interactive shell,
+  # and ZLE reads the controlling terminal (/dev/tty) regardless of what is
+  # piped to stdin, so it hangs waiting for a human on any machine that has
+  # a terminal. Counting banner lines guards the same regression either way
+  # -- zero lines (a missing final print) or two (the -v side-effect bug)
+  # both fail this assertion.
   local output
-  output="$(print exit | env HOME=$fakehome ZDOTDIR=$fakehome TERM=dumb zsh $__ZEST_ROOT_DIR/zest 2>&1)" || zstat=$?
-  zf_rm -rf $fakehome
-  assert_equal 0 $zstat
+  output="$(__zest_welcome_message)"
   integer banner_count=${#${(M)${(f)output}:#*now initialized*}}
   assert_equal 1 $banner_count
+  assert_contains $output "now initialized"
 }

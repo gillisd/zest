@@ -319,6 +319,55 @@ framework loaded — define or source tests, then call `run_tests`
 Sourcing `./zest` into an existing interactive shell loads the same
 environment in place.
 
+## Testing ZLE widgets
+
+The `tty_*` helpers run your widgets inside a **real interactive zsh on a
+real pseudo-terminal** (via `zsh/zpty`, which ships with zsh -- nothing to
+install). Keystrokes go in through the pty; editor state comes back out
+through a file side channel written by a snapshot widget. The pty's output
+stream is never parsed, which is what keeps these tests deterministic.
+
+    test_upcase_widget() {
+      tty_available || { skip "zsh/zpty unavailable"; return 0 }
+      tty_start my_widgets.zsh
+      tty_type "hello world"
+      tty_press '^T'
+      assert_buffer "HELLO WORLD"
+      assert_cursor_at 11
+    }
+
+The session helpers:
+
+- `tty_available` -- succeeds if `zsh/zpty` can load; pair with `skip`.
+- `tty_start [file ...]` -- spawns a fresh `zsh -f -i` session (80x24,
+  emacs keymap, empty prompts) and sources each file in it. Starting a
+  new session tears down the old one; every test gets its own.
+- `tty_run cmd` -- executes one complete command line in the session and
+  waits for it to finish. Use it to define widgets and bindings inline.
+- `tty_type text` -- sends literal keystrokes, no newline.
+- `tty_press key ...` -- sends key chords in caret or escape notation:
+  `'^T'`, `'^A'`, `'\e'`.
+- `tty_stop` -- ends the session early. You rarely need it: zest tears
+  down any live session automatically after each test and on `zest_quit`.
+
+Assertions: `assert_buffer` / `refute_buffer` and `assert_cursor_at` /
+`refute_cursor_at`. After any of them, the captured state is also
+available as `$zest_tty_buffer`, `$zest_tty_cursor`, `$zest_tty_lbuffer`
+and `$zest_tty_rbuffer` for use with the ordinary assertions.
+
+Things to know:
+
+- State assertions only: zest deliberately does not assert on rendered
+  screen contents. Buffer and cursor are deterministic; screens are not.
+- Structure widgets as thin shims over pure functions where you can, and
+  unit-test the pure functions with ordinary zest tests. Reserve the tty
+  layer for bindings, builtin-widget interplay, and keymap behavior.
+- Sync deadlines are 10 seconds; a hung widget fails its test with a
+  `<tty snapshot timed out>` message instead of wedging the run.
+- Avoid binding `^S`/`^Q` in tests: pty flow control may eat them.
+- `tty_run` takes one complete command line and reports completion, not
+  success -- assert on the resulting state.
+
 ## CI
 
 The runner needs nothing from the environment: no `.zshrc`, no

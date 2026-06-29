@@ -44,6 +44,7 @@ test_zest_quit_removes_generated_assertions_and_helpers() {
   [skip]="$(functions skip >/dev/null 2>&1 && print 0 || print 1)"
   [zest_print]="$(functions zest_print >/dev/null 2>&1 && print 0 || print 1)"
   [internal]="$(functions __zest_record_failure >/dev/null 2>&1 && print 0 || print 1)"
+  [tty]="$(functions tty_start >/dev/null 2>&1 && print 0 || print 1)"
   )"
   )"
   local -A fns

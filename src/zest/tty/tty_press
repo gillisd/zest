@@ -1,0 +1,15 @@
+#autoload
+
+emulate -L zsh
+
+if [[ -z $__zest_tty_session ]]; then
+  __zest_record_failure "tty_press: no live session -- call tty_start first"
+  return 1
+fi
+
+local key
+for key in "$@"; do
+  zpty -w -n $__zest_tty_session "${(g:ce:)key}"
+done
+typeset -g __zest_tty_stale=true
+return 0

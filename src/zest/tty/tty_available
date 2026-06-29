@@ -1,0 +1,5 @@
+#autoload
+
+emulate -L zsh
+
+zmodload zsh/zpty 2>/dev/null

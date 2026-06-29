@@ -1,3 +1,7 @@
 #autoload
 
 __zest_reset_std_globals
+
+if [[ -n $__zest_tty_session ]]; then
+  __zest_tty_cleanup
+fi

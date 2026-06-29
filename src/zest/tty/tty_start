@@ -1,0 +1,59 @@
+#autoload
+
+emulate -L zsh
+
+if ! zmodload zsh/zpty 2>/dev/null; then
+  __zest_record_failure "tty_start: zsh/zpty module unavailable"
+  return 1
+fi
+
+if [[ -n $__zest_tty_session ]]; then
+  __zest_tty_cleanup
+fi
+
+typeset -g __zest_tty_session="zest_tty_${$}_${RANDOM}"
+typeset -g __zest_tty_statefile=$(mktemp)
+typeset -g __zest_tty_syncfile=$(mktemp)
+typeset -gi __zest_tty_sync_count=0
+typeset -g __zest_tty_stale=true
+typeset -g zest_tty_buffer="" zest_tty_cursor="" zest_tty_lbuffer="" zest_tty_rbuffer=""
+
+if ! zpty -b $__zest_tty_session zsh -f -i; then
+  __zest_record_failure "tty_start: failed to spawn a pty session"
+  __zest_tty_cleanup
+  return 1
+fi
+
+# The snapshot widget runs INSIDE the session: it copies the ZLE specials to
+# plain locals and writes them to the state file as eval-able typeset lines,
+# ending with a sentinel. The harness never reads the pty's output stream --
+# the file is the side channel, which is what keeps this deterministic.
+local setup_script=$(mktemp)
+cat > $setup_script <<'ZEST_TTY_SETUP'
+__zest_snap() {
+  emulate -L zsh
+  local b=$BUFFER c=$CURSOR l=$LBUFFER r=$RBUFFER
+  {
+    print -r -- "typeset -g zest_tty_buffer=${(q+)b}"
+    print -r -- "typeset -g zest_tty_cursor=${(q+)c}"
+    print -r -- "typeset -g zest_tty_lbuffer=${(q+)l}"
+    print -r -- "typeset -g zest_tty_rbuffer=${(q+)r}"
+    print -rn -- DONE
+  } > $ZEST_TTY_STATEFILE
+}
+zle -N __zest_snap
+bindkey -- $'\e[99;9~' __zest_snap
+ZEST_TTY_SETUP
+
+tty_run "stty columns 80 rows 24" || return 1
+tty_run "bindkey -e; unsetopt zle_bracketed_paste beep 2>/dev/null; PROMPT=; RPROMPT=" || return 1
+tty_run "typeset -g ZEST_TTY_STATEFILE=${(q)__zest_tty_statefile}" || return 1
+tty_run "source ${(q)setup_script}" || return 1
+zf_rm -f $setup_script
+
+local file
+for file in "$@"; do
+  tty_run "source ${(q)${file:a}}" || return 1
+done
+
+return 0

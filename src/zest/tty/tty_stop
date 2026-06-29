@@ -1,0 +1,5 @@
+#autoload
+
+emulate -L zsh
+
+__zest_tty_cleanup

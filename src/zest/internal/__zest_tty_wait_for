@@ -1,0 +1,16 @@
+#autoload
+
+emulate -L zsh
+
+local file=$1
+local pattern=$2
+integer tries
+
+for tries in {1..200}; do
+  if [[ -e $file && "$(<$file)" = ${~pattern} ]]; then
+    return 0
+  fi
+  sleep 0.05
+done
+
+return 1
