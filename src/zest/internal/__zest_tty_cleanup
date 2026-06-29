@@ -2,18 +2,9 @@
 
 emulate -L zsh
 
-if [[ -n $__zest_tty_session ]]; then
-  zpty -d $__zest_tty_session 2>/dev/null
-fi
-if [[ -n $__zest_tty_statefile ]]; then
-  zf_rm -f $__zest_tty_statefile
-fi
-if [[ -n $__zest_tty_syncfile ]]; then
-  zf_rm -f $__zest_tty_syncfile
-fi
+[[ -n $__zest_tty_session ]] && zpty -d $__zest_tty_session 2>/dev/null
 
-unset __zest_tty_session __zest_tty_statefile __zest_tty_syncfile \
-  __zest_tty_stale __zest_tty_sync_count 2>/dev/null
-unset zest_tty_buffer zest_tty_cursor zest_tty_lbuffer zest_tty_rbuffer 2>/dev/null
+unset __zest_tty_session __zest_tty_prompt 2>/dev/null
+unset zest_tty_buffer zest_tty_cursor zest_tty_lbuffer zest_tty_rbuffer zest_tty_keymap 2>/dev/null
 
 return 0

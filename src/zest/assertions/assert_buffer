@@ -2,13 +2,9 @@
 
 emulate -L zsh
 
-local expected=$1
+local want=${(V)1}
+__zest_tty_snapshot || return 1
 
-__zest_tty_refresh || return 1
-
-if [[ $zest_tty_buffer = $expected ]]; then
-  return 0
-fi
-
-__zest_record_failure "expected BUFFER to be ${(qqq)expected} but was ${(qqq)zest_tty_buffer}"
+[[ $zest_tty_buffer = $want ]] && return 0
+__zest_record_failure "expected BUFFER to be ${(qqq)1} but was ${(qqq)zest_tty_buffer}"
 return 1

@@ -2,17 +2,13 @@
 
 emulate -L zsh
 
-local unexpected=$1
+local unwanted=$1
+__zest_tty_snapshot || return 1
 
-__zest_tty_refresh || return 1
-
-if [[ $zest_tty_cursor = <-> && $unexpected = <-> ]]; then
-  if (( zest_tty_cursor != unexpected )); then
-    return 0
-  fi
-elif [[ $zest_tty_cursor != $unexpected ]]; then
+if [[ $zest_tty_cursor = <-> && $unwanted = <-> ]]; then
+  (( zest_tty_cursor != unwanted )) && return 0
+elif [[ $zest_tty_cursor != $unwanted ]]; then
   return 0
 fi
-
-__zest_record_failure "expected CURSOR to not be at ${(qqq)unexpected} but was"
+__zest_record_failure "expected CURSOR to not be at ${(qqq)unwanted} but was"
 return 1

@@ -7,15 +7,8 @@ if [[ -z $__zest_tty_session ]]; then
   return 1
 fi
 
-(( __zest_tty_sync_count = __zest_tty_sync_count + 1 ))
-local marker="__ZEST_RUN_${__zest_tty_sync_count}__"
-
-zpty -w $__zest_tty_session "$1 ; print -rn -- $marker >> ${(q)__zest_tty_syncfile}"
-
-if ! __zest_tty_wait_for $__zest_tty_syncfile "*${marker}*"; then
-  __zest_record_failure "tty_run: command did not complete within the deadline: ${(qqq)1}"
+if ! __zest_tty_send_synced "$1"; then
+  __zest_record_failure "tty_run: command did not complete: ${(qqq)1}"
   return 1
 fi
-
-typeset -g __zest_tty_stale=true
 return 0

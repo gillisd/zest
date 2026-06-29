@@ -323,9 +323,17 @@ environment in place.
 
 The `tty_*` helpers run your widgets inside a **real interactive zsh on a
 real pseudo-terminal** (via `zsh/zpty`, which ships with zsh -- nothing to
-install). Keystrokes go in through the pty; editor state comes back out
-through a file side channel written by a snapshot widget. The pty's output
-stream is never parsed, which is what keeps these tests deterministic.
+install). Keystrokes go in through the pty; editor state comes back out on
+the pty's own output stream, printed by a bound snapshot widget and read
+back by matching a unique marker. Synchronisation is a single *blocking
+must-match read* (`zpty -r -m`): the harness waits for a sentinel prompt
+(after a command) or the snapshot markers (after an assertion) to appear in
+the stream, blocking in the kernel until they do -- never polling, never
+sleeping. This is the exact primitive zsh's own `comptest` harness uses,
+and it is what keeps these tests deterministic. There is no in-band
+timeout: like zsh's suite, a non-terminating widget will block the read, so
+wrap the run with `timeout(1)` (or rely on your CI's wall clock) if you
+want a hard cap.
 
     test_upcase_widget() {
       tty_available || { skip "zsh/zpty unavailable"; return 0 }
@@ -339,9 +347,10 @@ stream is never parsed, which is what keeps these tests deterministic.
 The session helpers:
 
 - `tty_available` -- succeeds if `zsh/zpty` can load; pair with `skip`.
-- `tty_start [file ...]` -- spawns a fresh `zsh -f -i` session (80x24,
-  emacs keymap, empty prompts) and sources each file in it. Starting a
-  new session tears down the old one; every test gets its own.
+- `tty_start [file ...]` -- spawns a fresh interactive `zsh -f` on the pty
+  (80x24, emacs keymap, empty sentinel prompt) and sources each file in
+  it. Starting a new session tears down the old one; every test gets its
+  own.
 - `tty_run cmd` -- executes one complete command line in the session and
   waits for it to finish. Use it to define widgets and bindings inline.
 - `tty_type text` -- sends literal keystrokes, no newline.
@@ -362,8 +371,12 @@ Things to know:
 - Structure widgets as thin shims over pure functions where you can, and
   unit-test the pure functions with ordinary zest tests. Reserve the tty
   layer for bindings, builtin-widget interplay, and keymap behavior.
-- Sync deadlines are 10 seconds; a hung widget fails its test with a
-  `<tty snapshot timed out>` message instead of wedging the run.
+- There is no per-read timeout, matching zsh's own harness: the blocking
+  read returns when the marker arrives or when the session ends. A widget
+  that never terminates will block, so cap the whole run with `timeout(1)`
+  if you need to. If the session dies mid-assertion, the captured state is
+  poisoned to `<tty snapshot unavailable: session ended>` so the assertion
+  fails loudly rather than reading stale values.
 - Avoid binding `^S`/`^Q` in tests: pty flow control may eat them.
 - `tty_run` takes one complete command line and reports completion, not
   success -- assert on the resulting state.

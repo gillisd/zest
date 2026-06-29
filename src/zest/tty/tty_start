@@ -3,57 +3,71 @@
 emulate -L zsh
 
 if ! zmodload zsh/zpty 2>/dev/null; then
-  __zest_record_failure "tty_start: zsh/zpty module unavailable"
+  __zest_record_failure "tty_start: zsh/zpty unavailable"
   return 1
 fi
 
-if [[ -n $__zest_tty_session ]]; then
-  __zest_tty_cleanup
-fi
+[[ -n $__zest_tty_session ]] && __zest_tty_cleanup
 
 typeset -g __zest_tty_session="zest_tty_${$}_${RANDOM}"
-typeset -g __zest_tty_statefile=$(mktemp)
-typeset -g __zest_tty_syncfile=$(mktemp)
-typeset -gi __zest_tty_sync_count=0
-typeset -g __zest_tty_stale=true
-typeset -g zest_tty_buffer="" zest_tty_cursor="" zest_tty_lbuffer="" zest_tty_rbuffer=""
+typeset -g __zest_tty_prompt="ZESTPROMPT${RANDOM}SENTINEL"
+typeset -g zest_tty_buffer="" zest_tty_cursor="" zest_tty_lbuffer="" zest_tty_rbuffer="" zest_tty_keymap=""
 
-if ! zpty -b $__zest_tty_session zsh -f -i; then
+# Spawn WITHOUT -b: a blocking master is required for blocking pattern reads.
+# The pty makes zsh interactive on its own; the sentinel prompt is inherited
+# from the environment so the very first read has something to match on. It is
+# printable and metacharacter-free -- control bytes get swallowed as ZLE
+# zero-width prompt markers, and zpty evaluates this command line.
+if ! zpty $__zest_tty_session env PS1=${(q)__zest_tty_prompt} PROMPT=${(q)__zest_tty_prompt} zsh -f; then
   __zest_record_failure "tty_start: failed to spawn a pty session"
   __zest_tty_cleanup
   return 1
 fi
 
-# The snapshot widget runs INSIDE the session: it copies the ZLE specials to
-# plain locals and writes them to the state file as eval-able typeset lines,
-# ending with a sentinel. The harness never reads the pty's output stream --
-# the file is the side channel, which is what keeps this deterministic.
-local setup_script=$(mktemp)
-cat > $setup_script <<'ZEST_TTY_SETUP'
-__zest_snap() {
-  emulate -L zsh
-  local b=$BUFFER c=$CURSOR l=$LBUFFER r=$RBUFFER
-  {
-    print -r -- "typeset -g zest_tty_buffer=${(q+)b}"
-    print -r -- "typeset -g zest_tty_cursor=${(q+)c}"
-    print -r -- "typeset -g zest_tty_lbuffer=${(q+)l}"
-    print -r -- "typeset -g zest_tty_rbuffer=${(q+)r}"
-    print -rn -- DONE
-  } > $ZEST_TTY_STATEFILE
-}
-zle -N __zest_snap
-bindkey -- $'\e[99;9~' __zest_snap
-ZEST_TTY_SETUP
+if ! __zest_tty_expect "*${__zest_tty_prompt}*"; then
+  __zest_record_failure "tty_start: the shell never reached its first prompt"
+  __zest_tty_cleanup
+  return 1
+fi
 
-tty_run "stty columns 80 rows 24" || return 1
-tty_run "bindkey -e; unsetopt zle_bracketed_paste beep 2>/dev/null; PROMPT=; RPROMPT=" || return 1
-tty_run "typeset -g ZEST_TTY_STATEFILE=${(q)__zest_tty_statefile}" || return 1
-tty_run "source ${(q)setup_script}" || return 1
-zf_rm -f $setup_script
+# Configuration and the snapshot widget go in via a sourced setup file -- the
+# same approach zsh's comptest harness uses, which sidesteps fragile inline
+# quoting. The widget prints editor state to the stream (the side channel is
+# the output, read back by pattern); it never touches BUFFER, so editing
+# continues across assertions.
+local setup=$(mktemp)
+cat > $setup <<'ZSETUP'
+stty -icanon -iexten 38400 columns 80 rows 24 2>/dev/null
+TERM=vt100
+KEYTIMEOUT=1
+setopt zle
+bindkey -e
+__zest_snapshot_widget() {
+  emulate -L zsh
+  local b=$BUFFER c=$CURSOR l=$LBUFFER r=$RBUFFER k=$KEYMAP
+  print -lr -- $'\n<zest-snap>' "B:${(V)b}" "C:$c" "L:${(V)l}" "R:${(V)r}" "K:$k" '<zest-snap-end>'
+  zle -R
+}
+zle -N __zest_snapshot_widget
+bindkey    -- $'\C-x' __zest_snapshot_widget
+bindkey -a -- $'\C-x' __zest_snapshot_widget
+ZSETUP
+__zest_tty_send_synced "source ${(q)setup}"
+local setup_ok=$?
+zf_rm -f $setup
+if (( setup_ok != 0 )); then
+  __zest_record_failure "tty_start: shell setup did not complete"
+  __zest_tty_cleanup
+  return 1
+fi
 
 local file
 for file in "$@"; do
-  tty_run "source ${(q)${file:a}}" || return 1
+  if ! __zest_tty_send_synced "source ${(q)${file:a}}"; then
+    __zest_record_failure "tty_start: sourcing ${(qqq)file} did not complete"
+    __zest_tty_cleanup
+    return 1
+  fi
 done
 
 return 0

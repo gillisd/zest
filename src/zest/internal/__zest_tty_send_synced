@@ -1,0 +1,7 @@
+#autoload
+
+emulate -L zsh
+
+zpty -w $__zest_tty_session "$1"
+__zest_tty_expect "*${__zest_tty_prompt}*"
+(( $? == 0 ))

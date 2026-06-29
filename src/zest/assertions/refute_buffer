@@ -2,13 +2,9 @@
 
 emulate -L zsh
 
-local unexpected=$1
+local unwanted=${(V)1}
+__zest_tty_snapshot || return 1
 
-__zest_tty_refresh || return 1
-
-if [[ $zest_tty_buffer != $unexpected ]]; then
-  return 0
-fi
-
-__zest_record_failure "expected BUFFER to not be ${(qqq)unexpected} but was"
+[[ $zest_tty_buffer != $unwanted ]] && return 0
+__zest_record_failure "expected BUFFER to not be ${(qqq)1} but was"
 return 1

@@ -8,6 +8,4 @@ if [[ -z $__zest_tty_session ]]; then
 fi
 
 zpty -w -n $__zest_tty_session "$*"
-__zest_tty_drain
-typeset -g __zest_tty_stale=true
 return 0
