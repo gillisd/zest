@@ -54,7 +54,7 @@ for func in $test_funcs; do
       func_rc=$?
     fi
 
-    if (( func_rc != 0 )) && ! $zest_current_failed; then
+    if (( func_rc != 0 )) && ! $zest_current_failed && ! $zest_current_skipped; then
       __zest_record_failure "test returned non-zero: $func_rc" ${functions_source[$func]:-unknown}
     fi
 

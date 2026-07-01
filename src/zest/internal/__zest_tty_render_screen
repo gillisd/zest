@@ -1,0 +1,37 @@
+#autoload
+
+emulate -L zsh
+setopt extendedglob
+
+local s=$__zest_tty_raw
+
+# Strip terminal control so the scrollback is readable: CSI/OSC escape
+# sequences, then apply backspaces (ZLE redraws a line as char + BS + final
+# text -- dropping the BS would orphan the first char), then fold CR/CRLF to
+# newlines and remove the sentinel prompt.
+s=${s//$'\e['[0-9;?]#[a-zA-Z]/}
+s=${s//$'\e]'*$'\a'/}
+while [[ $s == *$'\b'* ]]; do s=${s//?$'\b'/}; done
+s=${s//$'\r\n'/$'\n'}
+s=${s//$'\r'/$'\n'}
+s=${s//$__zest_tty_prompt/}
+
+# Drop the snapshot side-channel blocks line by line (a greedy glob would eat
+# real output between two snapshots), strip residual control bytes except tab,
+# trim trailing whitespace, and skip zsh's lone partial-line marker.
+local out="" line inblock=0
+for line in "${(@f)s}"; do
+  [[ $line == *ZESTSNAPSTART* ]] && { inblock=1; continue }
+  [[ $line == *ZESTSNAPEND* ]]   && { inblock=0; continue }
+  (( inblock )) && continue
+  line=${line//[^[:print:]$'\t']/}
+  line=${line%%[[:space:]]##}
+  [[ $line == (\#|%) ]] && continue
+  out+="$line"$'\n'
+done
+
+# Collapse blank-line runs and strip leading blanks.
+out=${out//$'\n'(#c2,)/$'\n'$'\n'}
+out=${out##$'\n'#}
+
+typeset -g zest_tty_screen=$out

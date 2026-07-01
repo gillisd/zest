@@ -1,0 +1,12 @@
+#autoload
+
+emulate -L zsh
+
+__zest_tty_snapshot || return 1
+
+if [[ $zest_tty_screen != *"$1"* ]]; then
+  return 0
+fi
+
+__zest_record_failure "expected the terminal screen NOT to contain ${(qqq)1} but it did"
+return 1

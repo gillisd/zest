@@ -8,3 +8,12 @@ emulate -L zsh
 # own zpty_read primitive: it blocks in the kernel between bytes rather than
 # polling, and drains the master as it reads. The match lands in REPLY.
 zpty -r -m $__zest_tty_session REPLY "$1" 2>/dev/null
+local __zest_expect_rc=$?
+
+# Accumulate the raw byte stream and refresh the cleaned screen view, so the
+# scrollback is inspectable ($zest_tty_raw / $zest_tty_screen) the same way the
+# editor buffer is.
+__zest_tty_raw+=$REPLY
+__zest_tty_render_screen
+
+return $__zest_expect_rc

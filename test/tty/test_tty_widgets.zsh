@@ -1,45 +1,40 @@
 test_tty_typing_fills_buffer() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_type "hello world"
-  assert_buffer "hello world"
-  assert_cursor_at 11
+  assert_tty_buffer "hello world"
+  assert_tty_cursor_at 11
 }
 
 test_tty_widget_transforms_buffer() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_run 'zest-demo-upcase() { LBUFFER=${(U)LBUFFER} }; zle -N zest-demo-upcase; bindkey "^T" zest-demo-upcase'
   tty_type "hello world"
   tty_press '^T'
-  assert_buffer "HELLO WORLD"
-  assert_cursor_at 11
+  assert_tty_buffer "HELLO WORLD"
+  assert_tty_cursor_at 11
 }
 
 test_tty_widget_can_call_builtin_widgets() {
   # the fidelity proof: a faked ZLE cannot do this
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_run 'zest-demo-kill() { zle backward-kill-word }; zle -N zest-demo-kill; bindkey "^T" zest-demo-kill'
   tty_type "rm -rf precious"
   tty_press '^T'
-  assert_buffer "rm -rf "
-  assert_cursor_at 7
+  assert_tty_buffer "rm -rf "
+  assert_tty_cursor_at 7
 }
 
 test_tty_builtin_motion_moves_cursor() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_type "hello"
   tty_press '^A'
-  assert_cursor_at 0
-  assert_buffer "hello"
+  assert_tty_cursor_at 0
+  assert_tty_buffer "hello"
   tty_press '^E'
-  assert_cursor_at 5
+  assert_tty_cursor_at 5
 }
 
-test_tty_start_sources_widget_files() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
+test_tty_source_loads_a_file() {
   local widget_file=$(mktemp)
   cat > $widget_file <<'WF'
 zest-demo-shout() {
@@ -49,37 +44,50 @@ zest-demo-shout() {
 zle -N zest-demo-shout
 bindkey '^T' zest-demo-shout
 WF
-  tty_start $widget_file
+  tty_start
+  tty_source $widget_file
   zf_rm -f $widget_file
   tty_type "ship it"
   tty_press '^T'
-  assert_buffer "ship it!"
-  assert_cursor_at 8
+  assert_tty_buffer "ship it!"
+  assert_tty_cursor_at 8
 }
 
 test_tty_exposes_split_buffers() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_type "hello"
   tty_press '^A'
-  assert_cursor_at 0
+  assert_tty_cursor_at 0
   assert_equal "" "$zest_tty_lbuffer"
   assert_equal "hello" "$zest_tty_rbuffer"
 }
 
 test_tty_refute_buffer() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_type "abc"
-  refute_buffer "xyz"
-  refute_cursor_at 99
+  refute_tty_buffer "xyz"
+  refute_tty_cursor_at 99
 }
 
 test_tty_restart_gives_fresh_session() {
-  tty_available || { skip "zsh/zpty unavailable"; return 0 }
   tty_start
   tty_type "leftover state"
   tty_start
   tty_type "clean"
-  assert_buffer "clean"
+  assert_tty_buffer "clean"
+}
+
+test_tty_source_runs_a_function() {
+  zest-demo-newline-setup() {
+    zest-demo-newline() { LBUFFER+=$'\n' }
+    zle -N zest-demo-newline
+    bindkey '^T' zest-demo-newline
+  }
+  tty_start
+  tty_source zest-demo-newline-setup
+  tty_type "a"
+  tty_press '^T'
+  tty_type "b"
+  assert_tty_buffer $'a\nb'
+  assert_tty_cursor_at 3
 }

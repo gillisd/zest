@@ -1,0 +1,12 @@
+#autoload
+
+emulate -L zsh
+
+if [[ -z $__zest_tty_session ]]; then
+  __zest_record_failure "tty_snapshot: no live session -- call tty_start first"
+  return 1
+fi
+
+# Refresh the editor globals ($zest_tty_buffer and friends) and flush any
+# pending terminal output into $zest_tty_screen, without making an assertion.
+__zest_tty_snapshot

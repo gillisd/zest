@@ -336,21 +336,37 @@ wrap the run with `timeout(1)` (or rely on your CI's wall clock) if you
 want a hard cap.
 
     test_upcase_widget() {
-      tty_available || { skip "zsh/zpty unavailable"; return 0 }
-      tty_start my_widgets.zsh
+      upcase-setup() {
+        upcase-word() { LBUFFER=${(U)LBUFFER} }
+        zle -N upcase-word
+        bindkey '^T' upcase-word
+      }
+      tty_start
+      tty_source upcase-setup
       tty_type "hello world"
       tty_press '^T'
-      assert_buffer "HELLO WORLD"
-      assert_cursor_at 11
+      assert_tty_buffer "HELLO WORLD"
+      assert_tty_cursor_at 11
     }
+
+Develop the widget in your interactive shell, then hand the setup function
+straight to the session -- no file on disk. `tty_source` also takes a file
+if you prefer one.
 
 The session helpers:
 
-- `tty_available` -- succeeds if `zsh/zpty` can load; pair with `skip`.
-- `tty_start [file ...]` -- spawns a fresh interactive `zsh -f` on the pty
-  (80x24, emacs keymap, empty sentinel prompt) and sources each file in
-  it. Starting a new session tears down the old one; every test gets its
-  own.
+- `tty_available` -- optional predicate, true when `zsh/zpty` can load. You
+  rarely need it: `tty_start` skips the test automatically when zpty is
+  missing, so a plain `tty_start` is enough.
+- `tty_start` -- spawns a fresh interactive `zsh -f` on the pty (80x24,
+  emacs keymap, sentinel prompt). Takes no arguments; load widgets with
+  `tty_source`. Starting a new session tears down the old one; every test
+  gets its own.
+- `tty_source file-or-function` -- loads widget code into the running
+  session. Pass a path to source the file, or the name of a function
+  defined in your shell -- its body runs in the session, so you can build a
+  widget interactively and test it without writing a file. A function name
+  takes precedence over a like-named file.
 - `tty_run cmd` -- executes one complete command line in the session and
   waits for it to finish. Use it to define widgets and bindings inline.
 - `tty_type text` -- sends literal keystrokes, no newline. Keep it
@@ -359,19 +375,36 @@ The session helpers:
   the child's own redraw output where pty buffers are small.
 - `tty_press key ...` -- sends key chords in caret or escape notation:
   `'^T'`, `'^A'`, `'\e'`.
+- `tty_snapshot` -- refreshes the inspectable variables (below) from the
+  live session without making an assertion. Reach for it when you want to
+  read `$zest_tty_screen` or `$zest_tty_buffer` directly.
 - `tty_stop` -- ends the session early. You rarely need it: zest tears
   down any live session automatically after each test and on `zest_quit`.
 
-Assertions: `assert_buffer` / `refute_buffer` and `assert_cursor_at` /
-`refute_cursor_at`. After any of them, the captured state is also
-available as `$zest_tty_buffer`, `$zest_tty_cursor`, `$zest_tty_lbuffer`
-and `$zest_tty_rbuffer` for use with the ordinary assertions.
+Assertions: `assert_tty_buffer` / `refute_tty_buffer` and `assert_tty_cursor_at`
+/ `refute_tty_cursor_at` check the editor buffer and cursor; `assert_tty_screen`
+/ `refute_tty_screen` check whether a substring appears in the scrollback.
+
+Inspectable variables -- refreshed by any tty assertion or by `tty_snapshot`:
+
+- `$zest_tty_buffer`, `$zest_tty_cursor`, `$zest_tty_lbuffer`,
+  `$zest_tty_rbuffer`, `$zest_tty_keymap` -- the ZLE editor state, exact.
+- `$zest_tty_screen` -- the terminal scrollback (echoed input and command
+  output) with escape sequences, padding, prompts and snapshot bookkeeping
+  stripped out. Best-effort and line-oriented, not a literal screen render.
+- `$zest_tty_raw` -- the complete, unprocessed pty byte stream, kept as
+  ground truth for when you need exact bytes or the cleaning hides something.
+
+These are ordinary parameters: read them directly, or feed them to the
+standard assertions.
 
 Things to know:
 
-- State assertions only: zest deliberately does not assert on rendered
-  screen contents. Buffer and cursor are deterministic; screens are not.
-- Comparisons are exact: `assert_buffer`/`refute_buffer` match the buffer
+- Editor state is exact; the screen is best-effort: the buffer and cursor
+  are deterministic, so their assertions match byte-for-byte, while
+  `$zest_tty_screen` is a cleaned view of real terminal output and can shift
+  with redraw timing -- assert on substrings of it rather than its exact shape.
+- Comparisons are exact: `assert_tty_buffer`/`refute_tty_buffer` match the buffer
   byte-for-byte against the literal string you pass, so buffers holding
   control characters, embedded newlines, or shell metacharacters are
   matched precisely -- and an expected value that looks like a glob (e.g.

@@ -3,7 +3,7 @@
 emulate -L zsh
 
 if ! zmodload zsh/zpty 2>/dev/null; then
-  __zest_record_failure "tty_start: zsh/zpty unavailable"
+  skip "zsh/zpty unavailable"
   return 1
 fi
 
@@ -12,6 +12,7 @@ fi
 typeset -g __zest_tty_session="zest_tty_${$}_${RANDOM}"
 typeset -g __zest_tty_prompt="ZESTPROMPT${RANDOM}SENTINEL"
 typeset -g zest_tty_buffer="" zest_tty_cursor="" zest_tty_lbuffer="" zest_tty_rbuffer="" zest_tty_keymap=""
+typeset -g __zest_tty_raw="" zest_tty_screen=""
 
 # Spawn WITHOUT -b: a blocking master is required for blocking pattern reads.
 # The pty makes zsh interactive on its own; the sentinel prompt is inherited
@@ -61,13 +62,8 @@ if (( setup_ok != 0 )); then
   return 1
 fi
 
-local file
-for file in "$@"; do
-  if ! __zest_tty_send_synced "source ${(q)${file:a}}"; then
-    __zest_record_failure "tty_start: sourcing ${(qqq)file} did not complete"
-    __zest_tty_cleanup
-    return 1
-  fi
-done
-
+# Discard the bring-up noise (prompt rendering, sourcing the setup file) so the
+# captured scrollback starts clean at the first thing the test does.
+__zest_tty_raw=""
+zest_tty_screen=""
 return 0

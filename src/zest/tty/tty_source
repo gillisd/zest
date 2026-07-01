@@ -1,0 +1,38 @@
+#autoload
+
+emulate -L zsh
+
+if [[ -z $__zest_tty_session ]]; then
+  __zest_record_failure "tty_source: no live session -- call tty_start first"
+  return 1
+fi
+
+local arg body tmp target
+for arg in "$@"; do
+  if (( $+functions[$arg] )); then
+    # A defined function: source its body into the session. This is the
+    # interactive path -- define a setup function (your widget plus its
+    # zle -N and bindkey) in your shell and hand it straight to the pty,
+    # no file required. A function name takes precedence over a like-named
+    # file.
+    body=$functions[$arg]
+    tmp=$(mktemp)
+    print -r -- "$body" > $tmp
+    target=$tmp
+  elif [[ -r $arg ]]; then
+    tmp=""
+    target=${arg:a}
+  else
+    __zest_record_failure "tty_source: ${(qqq)arg} is neither a defined function nor a readable file"
+    return 1
+  fi
+
+  if ! __zest_tty_send_synced "source ${(q)target}"; then
+    [[ -n $tmp ]] && zf_rm -f $tmp
+    __zest_record_failure "tty_source: loading ${(qqq)arg} did not complete"
+    return 1
+  fi
+  [[ -n $tmp ]] && zf_rm -f $tmp
+done
+
+return 0
