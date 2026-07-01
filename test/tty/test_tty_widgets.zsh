@@ -77,14 +77,11 @@ test_tty_restart_gives_fresh_session() {
   assert_tty_buffer "clean"
 }
 
-test_tty_source_runs_a_function() {
-  zest-demo-newline-setup() {
-    zest-demo-newline() { LBUFFER+=$'\n' }
-    zle -N zest-demo-newline
-    bindkey '^T' zest-demo-newline
-  }
+test_tty_source_copies_a_function() {
+  zest-demo-newline() { LBUFFER+=$'\n' }
   tty_start
-  tty_source zest-demo-newline-setup
+  tty_source zest-demo-newline
+  tty_run 'zle -N zest-demo-newline; bindkey "^T" zest-demo-newline'
   tty_type "a"
   tty_press '^T'
   tty_type "b"

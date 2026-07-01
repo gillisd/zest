@@ -336,22 +336,19 @@ wrap the run with `timeout(1)` (or rely on your CI's wall clock) if you
 want a hard cap.
 
     test_upcase_widget() {
-      upcase-setup() {
-        upcase-word() { LBUFFER=${(U)LBUFFER} }
-        zle -N upcase-word
-        bindkey '^T' upcase-word
-      }
+      upcase-word() { LBUFFER=${(U)LBUFFER} }
       tty_start
-      tty_source upcase-setup
+      tty_source upcase-word
+      tty_run 'zle -N upcase-word; bindkey "^T" upcase-word'
       tty_type "hello world"
       tty_press '^T'
       assert_tty_buffer "HELLO WORLD"
       assert_tty_cursor_at 11
     }
 
-Develop the widget in your interactive shell, then hand the setup function
-straight to the session -- no file on disk. `tty_source` also takes a file
-if you prefer one.
+Develop the widget in your interactive shell, copy it into the session with
+`tty_source`, then bind it with `tty_run` -- no file on disk. `tty_source`
+also takes a file if you prefer one.
 
 The session helpers:
 
@@ -364,9 +361,10 @@ The session helpers:
   gets its own.
 - `tty_source file-or-function` -- loads widget code into the running
   session. Pass a path to source the file, or the name of a function
-  defined in your shell -- its body runs in the session, so you can build a
-  widget interactively and test it without writing a file. A function name
-  takes precedence over a like-named file.
+  defined in your shell -- its definition is copied into the session under
+  the same name, so you can write a widget in your test and transplant it
+  into the pty with no file on disk (then bind it with `tty_run`). A
+  function name takes precedence over a like-named file.
 - `tty_run cmd` -- executes one complete command line in the session and
   waits for it to finish. Use it to define widgets and bindings inline.
 - `tty_type text` -- sends literal keystrokes, no newline. Keep it

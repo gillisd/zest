@@ -7,17 +7,16 @@ if [[ -z $__zest_tty_session ]]; then
   return 1
 fi
 
-local arg body tmp target
+local arg tmp target
 for arg in "$@"; do
   if (( $+functions[$arg] )); then
-    # A defined function: source its body into the session. This is the
-    # interactive path -- define a setup function (your widget plus its
-    # zle -N and bindkey) in your shell and hand it straight to the pty,
-    # no file required. A function name takes precedence over a like-named
+    # A defined function: copy its definition into the session so the same
+    # function exists there under the same name. Write a widget in your
+    # shell and transplant it into the pty with no file on disk, then bind
+    # it with tty_run. A function name takes precedence over a like-named
     # file.
-    body=$functions[$arg]
     tmp=$(mktemp)
-    print -r -- "$body" > $tmp
+    functions -- "$arg" > $tmp
     target=$tmp
   elif [[ -r $arg ]]; then
     tmp=""
