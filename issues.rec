@@ -11,7 +11,7 @@
 %mandatory: Title Description Status
 
 Id: 0
-Updated: Thu, 02 Jul 2026 00:06:20 -0400
+Updated: Thu, 02 Jul 2026 12:06:26 -0400
 Title: after initializing zest shell helper, "zest test/test_file.zsh" fails to run
 Description: Steps to replicate:
 + 1. Run /path/to/zest
@@ -25,10 +25,10 @@ Description: Steps to replicate:
 + zest now initialized!
 + Execute run_tests to run any defined test_* functions
 + ```
-Status: open
+Status: closed
 
 Id: 1
-Updated: Thu, 02 Jul 2026 00:11:39 -0400
+Updated: Thu, 02 Jul 2026 12:06:26 -0400
 Title: command not found errors after starting, running, then quitting
 Description: Steps to replicate:
 + 1. source /path/to/zest
@@ -47,7 +47,7 @@ Description: Steps to replicate:
 + define_assertion__valid_zsh:2: command not found: assertion_message
 + define_assertion__valid_zsh:3: command not found: refutation_message
 + ```
-Status: open
+Status: closed
 
 Id: 2
 Updated: Thu, 02 Jul 2026 11:27:31 -0400
