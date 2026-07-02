@@ -319,6 +319,10 @@ framework loaded — define or source tests, then call `run_tests`
 Sourcing `./zest` into an existing interactive shell loads the same
 environment in place.
 
+Inside either session the `zest` function itself accepts file
+arguments — `zest test/foo.zsh` sources the files and runs their
+tests, exactly like `./zest test/foo.zsh` from the command line.
+
 ## Testing ZLE widgets
 
 The `tty_*` helpers run your widgets inside a **real interactive zsh on a

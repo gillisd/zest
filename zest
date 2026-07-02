@@ -84,6 +84,11 @@ zest() {
   zest_initialize
 
   if $was_sourced; then
+    if (( $#@ > 0 )); then
+      __zest_run_once $@
+      return $?
+    fi
+
     if [[ -o interactive ]]; then
       __zest_welcome_message
     fi
