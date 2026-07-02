@@ -48,3 +48,29 @@ Description: Steps to replicate:
 + define_assertion__valid_zsh:3: command not found: refutation_message
 + ```
 Status: open
+
+Id: 2
+Updated: Thu, 02 Jul 2026 11:27:31 -0400
+Title: zest <file> after zest_quit (without re-sourcing) fails with a cryptic error
+Description: Steps to replicate:
++ 1. source /path/to/zest
++ 2. zest_quit
++ 3. zest test/test_file.zsh
++ 
++ Expected: the tests run, or a clear message that the framework was torn down and must be re-sourced (source /path/to/zest).
++ Actual: the surviving `zest` function limps along and dies with a cryptic error, e.g. "command not found: __zest_run_once" (run from the repo root), or a failure at zest_initialize (run from another directory).
++ 
++ Notes: zest_quit is an explicit teardown. The `zest` function survives only because zest_quit's doom pattern zest_* requires an underscore, while the helpers it depends on (__zest_run_once, zest_initialize, ...) are all unfunctioned. The supported re-entry is to re-source ./zest, which works cleanly (covered by test_tty_quit_lifecycle). Low priority / unsupported path; a friendly "re-source ./zest" message would close it. Surfaced during review of PR #2.
+Status: open
+
+Id: 3
+Updated: Thu, 02 Jul 2026 11:27:31 -0400
+Title: test temp files leak on the failing path when errreturn aborts a test before cleanup
+Description: Steps to replicate:
++ A test shaped like: local f=$(mktemp); ...; <bare tty_run (or similar) that returns non-zero>; zf_rm -f $f
++ 
++ Expected: the temp file is always removed.
++ Actual: __zest_invoke_test runs the test body under `setopt errreturn` (dynamically scoped), so a bare tty_run that returns 1 aborts the test function before the zf_rm cleanup line, leaking the mktemp file.
++ 
++ Notes: only occurs on an already-failing test; the file is mode 0600 with a random name in $TMPDIR, so there is no security impact. This is a suite-wide convention (test/tty/test_tty_widgets.zsh, test/tty/test_tty_hardening.zsh, test/zest_quit_test.zsh, test/cli/test_zest_dispatch.zsh), not specific to one file. Consider an {always} block or a shared cleanup helper. Low priority. Surfaced during review of PR #2.
+Status: open

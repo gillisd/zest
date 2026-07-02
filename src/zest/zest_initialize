@@ -27,13 +27,6 @@ typeset -gA __zest_public_global_vars=(
   [NL]=$'\x0a'
 )
 
-typeset -ga __zest_builder_dsl_functions=(
-  check
-  arg
-  assertion_message
-  refutation_message
-)
-
 typeset -g __zest_builder_dsl_open=false
 
 local __zest_assertion_file

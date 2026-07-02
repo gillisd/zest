@@ -2,7 +2,7 @@
 
 emulate -L zsh
 
-if ! $__zest_builder_dsl_open; then
+if [[ $__zest_builder_dsl_open != true ]]; then
   return 0
 fi
 
