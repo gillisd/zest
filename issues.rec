@@ -1,12 +1,14 @@
 %rec: Issue
 %key: Id
 %typedef: text_t regexp /^.*$/
+%typedef: Status_t enum open in_progress closed
 %type: Id int
 %type: Title line
+%type: Status Status_t
 %type: Description text_t
 %type: Updated date
 %auto: Id Updated
-%mandatory: Title Description
+%mandatory: Title Description Status
 
 Id: 0
 Updated: Thu, 02 Jul 2026 00:06:20 -0400
@@ -23,6 +25,7 @@ Description: Steps to replicate:
 + zest now initialized!
 + Execute run_tests to run any defined test_* functions
 + ```
+Status: open
 
 Id: 1
 Updated: Thu, 02 Jul 2026 00:11:39 -0400
@@ -44,3 +47,4 @@ Description: Steps to replicate:
 + define_assertion__valid_zsh:2: command not found: assertion_message
 + define_assertion__valid_zsh:3: command not found: refutation_message
 + ```
+Status: open
