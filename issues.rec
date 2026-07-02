@@ -1,0 +1,46 @@
+%rec: Issue
+%key: Id
+%typedef: text_t regexp /^.*$/
+%type: Id int
+%type: Title line
+%type: Description text_t
+%type: Updated date
+%auto: Id Updated
+%mandatory: Title Description
+
+Id: 0
+Updated: Thu, 02 Jul 2026 00:06:20 -0400
+Title: after initializing zest shell helper, "zest test/test_file.zsh" fails to run
+Description: Steps to replicate:
++ 1. Run /path/to/zest
++ 2. zsh loads, `whence zest` should say "shell function from /path/to/zest"
++ 3. Run `zest test/test_file.zsh`
++ 
++ Expected: all tests in test/test_file.zsh are run
++ Actual: DOES NOT run any tests and instead prints:
++ 
++ ```
++ zest now initialized!
++ Execute run_tests to run any defined test_* functions
++ ```
+
+Id: 1
+Updated: Thu, 02 Jul 2026 00:11:39 -0400
+Title: command not found errors after starting, running, then quitting
+Description: Steps to replicate:
++ 1. source /path/to/zest
++ 2. source /path/to/test.zsh
++ 3. run_tests
++ 4. zest_quit
++ 5. source /path/to/zest
++ 
++ Expected: "zest now initialized!" (no errors)
++ Actual:
++ ```
++ define_assertion__executable:1: command not found: arg
++ define_assertion__executable:2: command not found: assertion_message
++ define_assertion__executable:3: command not found: refutation_message
++ define_assertion__valid_zsh:1: command not found: arg
++ define_assertion__valid_zsh:2: command not found: assertion_message
++ define_assertion__valid_zsh:3: command not found: refutation_message
++ ```
