@@ -54,3 +54,29 @@ test_zest_quit_removes_generated_assertions_and_helpers() {
     assert_equal 1 $val
   done
 }
+
+test_build_assertions_survives_quit_window() {
+  local inner=$(mktemp)
+  cat > $inner <<'IS'
+root=$1
+source $root/zest
+zest_quit
+fpath+=($root/src/zest $root/src/zest/internal)
+autoload -Uz __zest_build_assertions __zest_open_builder_dsl __zest_close_builder_dsl __zest_is_function_defined zest_printerr
+define_assertion__quitwindow() {
+  arg value
+  assertion_message 'value {value} should be non-empty'
+  refutation_message 'value {value} should be empty'
+  check() { [[ -n $value ]] }
+}
+__zest_build_assertions
+(( $+functions[assert_quitwindow] ))
+IS
+
+  run zsh $inner $__ZEST_ROOT_DIR
+
+  zf_rm -f $inner
+
+  assert_equal 0 $rc
+  refute_contains "$err" 'command not found'
+}

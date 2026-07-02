@@ -43,15 +43,15 @@ TERM=vt100
 KEYTIMEOUT=1
 setopt zle
 bindkey -e
-__zest_snapshot_widget() {
+zest-tty-snapshot-widget() {
   emulate -L zsh
   local b=$BUFFER c=$CURSOR l=$LBUFFER r=$RBUFFER k=$KEYMAP
   print -lr -- $'\nZESTSNAPSTART' "B:${(q+)b}" "C:$c" "L:${(q+)l}" "R:${(q+)r}" "K:$k" 'ZESTSNAPEND'
   zle -R
 }
-zle -N __zest_snapshot_widget
-bindkey    -- $'\C-x' __zest_snapshot_widget
-bindkey -a -- $'\C-x' __zest_snapshot_widget
+zle -N zest-tty-snapshot-widget
+bindkey    -- $'\C-x' zest-tty-snapshot-widget
+bindkey -a -- $'\C-x' zest-tty-snapshot-widget
 ZSETUP
 __zest_tty_send_synced "source ${(q)setup}"
 local setup_ok=$?
