@@ -2,10 +2,13 @@
 
 emulate -L zsh
 
-local subject=${1:?}
+# An absent or empty argument names no parameter, so it is not an array.
+# (${1:?} here would abort the whole run when an empty scalar is passed
+# unquoted through an assertion.)
+local subject=${1:-}
 local subject_type
 
-if ! (( $+parameters[$subject] )); then
+if [[ -z $subject ]] || ! (( $+parameters[$subject] )); then
   return 1
 fi
 

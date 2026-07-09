@@ -13,8 +13,13 @@ if ! __zest_tty_expect "*ZESTSNAPSTART*ZESTSNAPEND*"; then
   local poisoned="<tty snapshot unavailable: session ended>"
   zest_tty_buffer=$poisoned zest_tty_cursor=$poisoned
   zest_tty_lbuffer=$poisoned zest_tty_rbuffer=$poisoned zest_tty_keymap=$poisoned
+  # the accumulator still holds everything drained before the session ended
+  typeset -g zest_tty_raw=$__zest_tty_raw
   return 1
 fi
+
+# Expose the session-long raw pty stream as the documented public parameter.
+typeset -g zest_tty_raw=$__zest_tty_raw
 
 # Parse the LAST snapshot block; discard echo/redraw noise before it. The
 # markers are plain alphanumerics so they match literally in every context
