@@ -101,7 +101,7 @@ zest() {
     zmodload zsh/mapfile
     zmodload -F zsh/files b:zf_rm
 
-    local tmpdir=$(mktmp -d)
+    local tmpdir=$(mktemp -d)
     local currentdir=$PWD
     local user_rc=""
     local -a zshrc_path=(${ZDOTDIR:-$HOME}/.zshrc(N:P))
