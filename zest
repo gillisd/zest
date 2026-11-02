@@ -6,7 +6,6 @@ typeset -g __ZEST_EVAL_CONTEXT
 typeset -ga __ZEST_FUNCTION_DIRS
 typeset -ga __ZEST_FUNCTIONS
 
-
 __ZEST_EVAL_CONTEXT=$ZSH_EVAL_CONTEXT
 print -v __ZEST_MAIN_FILE -P %x
 
