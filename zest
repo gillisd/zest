@@ -102,7 +102,7 @@ zest() {
     zmodload zsh/mapfile
     zmodload -F zsh/files b:zf_rm
 
-    local temp=$(mktemp -d)
+    local tmpdir=$(mktmp -d)
     local currentdir=$PWD
     local user_rc=""
     local -a zshrc_path=(${ZDOTDIR:-$HOME}/.zshrc(N:P))
@@ -111,20 +111,20 @@ zest() {
       user_rc=${mapfile[$zshrc_path[1]]}
     fi
 
-    builtin cd $temp &>/dev/null
+    builtin cd -q $tmpdir
 
     mapfile[.zshrc]="
 		$user_rc
 		source $__ZEST_MAIN_FILE
-		builtin cd $currentdir &>/dev/null
+		builtin cd -q $currentdir
 		"
 
     {
       ZDOTDIR=$PWD zsh --interactive --zle --rcs
       } always {
       integer nested_rc=$?
-      builtin cd $currentdir &>/dev/null
-      zf_rm -rf $temp
+      builtin cd -q $currentdir
+      zf_rm -rf $tmpdir
       print -P "%F{cyan}Quitting%f %F{green}%Bzest%b%f%F{cyan}...%f"
       return $nested_rc
     }
