@@ -108,7 +108,18 @@ define_assertion__file_exists() {
   refutation_message "expected file {file} to not exist but did"
 
   check() {
-    [[ -e $file ]]
+    [[ -f $file ]]
+  }
+}
+
+define_assertion__dir_exists() {
+  arg dir
+
+  assertion_message "expected dir {dir} to exist but did not"
+  refutation_message "expected dir {dir} to not exist but did"
+
+  check() {
+    [[ -d $dir ]]
   }
 }
 
